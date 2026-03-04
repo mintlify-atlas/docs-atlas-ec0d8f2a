@@ -1,0 +1,161 @@
+{
+  "projectType": "framework",
+  "projectName": "Botpress",
+  "projectDescription": "Open-source platform for building and deploying AI-powered chatbots and agents with GPT/LLM integration.",
+  "theme": "palm",
+  "primaryColor": "#45c455",
+  "lightColor": "#a4e0ac",
+  "darkColor": "#cfdedc",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/architecture",
+              "concepts/bots",
+              "concepts/integrations",
+              "concepts/plugins",
+              "concepts/interfaces"
+            ]
+          },
+          {
+            "group": "Building Bots",
+            "pages": [
+              "bots/creating-bots",
+              "bots/bot-configuration",
+              "bots/bot-handlers",
+              "bots/conversations",
+              "bots/messages"
+            ]
+          },
+          {
+            "group": "Integration Development",
+            "pages": [
+              "integrations/overview",
+              "integrations/creating-integrations",
+              "integrations/integration-definition",
+              "integrations/channels",
+              "integrations/actions",
+              "integrations/events",
+              "integrations/deployment"
+            ]
+          },
+          {
+            "group": "Plugin Development",
+            "pages": [
+              "plugins/overview",
+              "plugins/creating-plugins",
+              "plugins/plugin-lifecycle"
+            ]
+          },
+          {
+            "group": "CLI Reference",
+            "pages": [
+              "cli/overview",
+              "cli/init",
+              "cli/build-and-bundle",
+              "cli/dev-and-serve",
+              "cli/deploy",
+              "cli/bot-management",
+              "cli/integration-management",
+              "cli/profile-management"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDK Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "sdk/introduction",
+              "sdk/installation"
+            ]
+          },
+          {
+            "group": "Bot SDK",
+            "pages": [
+              "sdk/bot/definition",
+              "sdk/bot/implementation",
+              "sdk/bot/client",
+              "sdk/bot/handlers"
+            ]
+          },
+          {
+            "group": "Integration SDK",
+            "pages": [
+              "sdk/integration/definition",
+              "sdk/integration/implementation",
+              "sdk/integration/client",
+              "sdk/integration/context"
+            ]
+          },
+          {
+            "group": "Plugin SDK",
+            "pages": [
+              "sdk/plugin/definition",
+              "sdk/plugin/implementation"
+            ]
+          },
+          {
+            "group": "Client API",
+            "pages": [
+              "sdk/client/overview",
+              "sdk/client/authentication",
+              "sdk/client/methods"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations Hub",
+        "groups": [
+          {
+            "group": "Available Integrations",
+            "pages": [
+              "integrations-hub/overview",
+              "integrations-hub/ai-providers",
+              "integrations-hub/communication",
+              "integrations-hub/productivity",
+              "integrations-hub/crm",
+              "integrations-hub/storage"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "AI-powered chatbot and agent framework with GPT/LLM support",
+    "67+ pre-built integrations (Slack, Discord, OpenAI, Anthropic, etc.)",
+    "TypeScript SDK for building custom integrations and bots",
+    "CLI tools for development, deployment, and bot management",
+    "Cloud hosting with Botpress Cloud platform",
+    "Plugin system for extending framework capabilities",
+    "Interface definitions for standardized integrations",
+    "Type-safe client for consuming Botpress APIs"
+  ],
+  "publicApiSurface": [
+    "@botpress/sdk - Bot, Integration, Plugin definitions and implementations",
+    "@botpress/cli - bp init, bp build, bp deploy, bp dev, bp serve",
+    "@botpress/client - Type-safe API client for Botpress Cloud",
+    "IntegrationDefinition - Define integration channels, actions, events",
+    "BotDefinition - Define bot configuration, handlers, workflows",
+    "PluginDefinition - Define plugins and their lifecycle",
+    "IntegrationContext - Runtime context for integration handlers",
+    "BotHandlers - Event handlers for bot logic",
+    "CLI Commands: login, logout, bots, integrations, interfaces, plugins"
+  ]
+}
