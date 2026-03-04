@@ -80,13 +80,20 @@
             "group": "CLI Reference",
             "pages": [
               "cli/overview",
+              "cli/login-logout",
               "cli/init",
+              "cli/add-remove",
+              "cli/generate",
               "cli/build-and-bundle",
               "cli/dev-and-serve",
               "cli/deploy",
+              "cli/read",
               "cli/bot-management",
               "cli/integration-management",
-              "cli/profile-management"
+              "cli/interface-management",
+              "cli/plugin-management",
+              "cli/profile-management",
+              "cli/experimental"
             ]
           }
         ]
@@ -98,7 +105,10 @@
             "group": "Overview",
             "pages": [
               "sdk/introduction",
-              "sdk/installation"
+              "sdk/installation",
+              "sdk/messages",
+              "sdk/zui",
+              "sdk/serve"
             ]
           },
           {
@@ -124,6 +134,12 @@
             "pages": [
               "sdk/plugin/definition",
               "sdk/plugin/implementation"
+            ]
+          },
+          {
+            "group": "Interface SDK",
+            "pages": [
+              "sdk/interface/definition"
             ]
           },
           {

@@ -1,0 +1,473 @@
+---
+title: Serve
+description: Local development server for testing integrations and bots
+---
+
+The `serve` module provides utilities for running integrations and bots locally during development. It creates an HTTP server that handles Botpress runtime requests, allowing you to test your code before deployment.
+
+## Import
+
+```typescript
+import { serve, parseBody } from '@botpress/sdk'
+```
+
+## serve()
+
+Starts a local HTTP server for handling Botpress runtime requests.
+
+```typescript
+function serve(
+  handler: Handler,
+  port?: number,
+  callback?: (port: number) => void
+): Promise<http.Server>
+```
+
+<ParamField path="handler" type="Handler" required>
+  Function that processes incoming requests.
+  
+  ```typescript
+  type Handler = (req: Request) => Promise<Response | void>
+  ```
+</ParamField>
+
+<ParamField path="port" type="number" default={8072}>
+  Port number to listen on. Defaults to 8072.
+</ParamField>
+
+<ParamField path="callback" type="function" optional>
+  Callback invoked when server starts listening.
+  
+  ```typescript
+  (port: number) => void
+  ```
+</ParamField>
+
+**Returns:** `Promise<http.Server>` - The Node.js HTTP server instance.
+
+## Request Type
+
+```typescript
+type Request = {
+  body?: string              // Raw request body
+  path: string               // URL path
+  query: string              // Query string (without ?)
+  method: string             // HTTP method (uppercase)
+  headers: {                 // Request headers (lowercase keys)
+    [key: string]: string | undefined
+  }
+}
+```
+
+## Response Type
+
+```typescript
+type Response = {
+  body?: string              // Response body (JSON string)
+  headers?: {                // Response headers
+    [key: string]: string
+  }
+  status?: number            // HTTP status code (default: 200)
+}
+```
+
+## parseBody()
+
+Helper function to parse JSON request body.
+
+```typescript
+function parseBody<T>(req: Request): T
+```
+
+<ParamField path="req" type="Request" required>
+  The request object to parse.
+</ParamField>
+
+**Returns:** Parsed JSON body as type `T`.
+
+**Throws:** Error if body is missing or invalid JSON.
+
+## Basic Usage
+
+```typescript
+import { serve } from '@botpress/sdk'
+
+const server = await serve(async (req) => {
+  console.log(`${req.method} ${req.path}`)
+  
+  return {
+    status: 200,
+    body: JSON.stringify({ message: 'Hello' })
+  }
+}, 3000)
+
+// Server listening on port 3000
+```
+
+## Health Check Endpoint
+
+The serve function automatically provides a `/health` endpoint:
+
+```bash
+curl http://localhost:8072/health
+# Returns: ok (200 status)
+```
+
+This endpoint is used by Botpress to verify the server is running.
+
+## Integration Example
+
+Using serve with an integration:
+
+```typescript index.ts
+import { serve, parseBody } from '@botpress/sdk'
+import { handler } from '.botpress'
+
+// Start local development server
+serve(
+  async (req) => {
+    console.log(`Received ${req.method} request to ${req.path}`)
+    
+    try {
+      // Parse incoming request
+      const body = parseBody(req)
+      
+      // Process with generated handler
+      const response = await handler({
+        ...body,
+        configuration: {
+          // Your local configuration for testing
+          apiKey: process.env.API_KEY!,
+          webhookSecret: process.env.WEBHOOK_SECRET!
+        }
+      })
+      
+      return {
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    } catch (error) {
+      console.error('Handler error:', error)
+      return {
+        status: 500,
+        body: JSON.stringify({ 
+          error: error instanceof Error ? error.message : 'Internal error' 
+        })
+      }
+    }
+  },
+  8072,
+  (port) => {
+    console.log(`Integration server listening on port ${port}`)
+    console.log(`Health check: http://localhost:${port}/health`)
+  }
+)
+```
+
+## Bot Example
+
+Using serve with a bot:
+
+```typescript index.ts
+import { serve, parseBody } from '@botpress/sdk'
+import { handler } from '.botpress'
+
+serve(
+  async (req) => {
+    console.log(`${req.method} ${req.path}`)
+    
+    if (req.method !== 'POST') {
+      return {
+        status: 405,
+        body: JSON.stringify({ error: 'Method not allowed' })
+      }
+    }
+    
+    try {
+      const body = parseBody(req)
+      const response = await handler(body)
+      
+      return {
+        status: 200,
+        body: JSON.stringify(response),
+        headers: { 'Content-Type': 'application/json' }
+      }
+    } catch (error) {
+      return {
+        status: 500,
+        body: JSON.stringify({ 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+      }
+    }
+  },
+  3000
+)
+```
+
+## Webhook Handler Example
+
+Handling external webhooks locally:
+
+```typescript webhook.ts
+import { serve, parseBody } from '@botpress/sdk'
+import crypto from 'crypto'
+
+serve(async (req) => {
+  if (req.path === '/webhook' && req.method === 'POST') {
+    // Verify webhook signature
+    const signature = req.headers['x-webhook-signature']
+    const body = req.body!
+    
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.WEBHOOK_SECRET!)
+      .update(body)
+      .digest('hex')
+    
+    if (signature !== expectedSignature) {
+      return {
+        status: 401,
+        body: JSON.stringify({ error: 'Invalid signature' })
+      }
+    }
+    
+    // Process webhook
+    const payload = parseBody(req)
+    console.log('Webhook received:', payload)
+    
+    // Handle the webhook...
+    
+    return {
+      status: 200,
+      body: JSON.stringify({ success: true })
+    }
+  }
+  
+  return {
+    status: 404,
+    body: JSON.stringify({ error: 'Not found' })
+  }
+})
+```
+
+## Request Routing Example
+
+```typescript
+import { serve, parseBody } from '@botpress/sdk'
+
+type Route = {
+  method: string
+  path: string
+  handler: (req: Request) => Promise<Response>
+}
+
+const routes: Route[] = [
+  {
+    method: 'POST',
+    path: '/action/sendMessage',
+    handler: async (req) => {
+      const { channelId, text } = parseBody<any>(req)
+      // Handle action...
+      return {
+        status: 200,
+        body: JSON.stringify({ messageId: '123' })
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/webhook/messages',
+    handler: async (req) => {
+      const payload = parseBody<any>(req)
+      // Handle webhook...
+      return { status: 200 }
+    }
+  }
+]
+
+serve(async (req) => {
+  const route = routes.find(
+    r => r.method === req.method && r.path === req.path
+  )
+  
+  if (route) {
+    return route.handler(req)
+  }
+  
+  return {
+    status: 404,
+    body: JSON.stringify({ error: 'Route not found' })
+  }
+})
+```
+
+## Error Handling
+
+The serve function automatically catches errors in the handler:
+
+```typescript
+import { serve } from '@botpress/sdk'
+
+serve(async (req) => {
+  // If this throws, serve() catches it and returns 500
+  throw new Error('Something went wrong')
+})
+
+// Response will be:
+// Status: 500
+// Body: {"error":"Something went wrong"}
+```
+
+For better error handling:
+
+```typescript
+serve(async (req) => {
+  try {
+    // Your handler logic
+    return { status: 200, body: JSON.stringify({ ok: true }) }
+  } catch (error) {
+    console.error('Handler error:', error)
+    
+    return {
+      status: 500,
+      body: JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal error'
+      }),
+      headers: { 'Content-Type': 'application/json' }
+    }
+  }
+})
+```
+
+## Testing with curl
+
+```bash
+# Health check
+curl http://localhost:8072/health
+
+# POST request
+curl -X POST http://localhost:8072/action/test \
+  -H "Content-Type: application/json" \
+  -d '{"param":"value"}'
+
+# With headers
+curl -X POST http://localhost:8072/webhook \
+  -H "Content-Type: application/json" \
+  -H "x-signature: abc123" \
+  -d '{"event":"message"}'
+```
+
+## Environment-Specific Configuration
+
+```typescript
+import { serve, parseBody } from '@botpress/sdk'
+import { handler } from '.botpress'
+
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 8072
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
+
+serve(
+  async (req) => {
+    if (!IS_PRODUCTION) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
+    }
+    
+    const body = parseBody(req)
+    const response = await handler(body)
+    
+    return {
+      status: 200,
+      body: JSON.stringify(response)
+    }
+  },
+  PORT,
+  (port) => {
+    console.log(`Server running on port ${port}`)
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+  }
+)
+```
+
+## Graceful Shutdown
+
+```typescript
+import { serve } from '@botpress/sdk'
+import http from 'http'
+
+let server: http.Server
+
+const startServer = async () => {
+  server = await serve(async (req) => {
+    // Your handler
+    return { status: 200 }
+  })
+  
+  // Handle shutdown signals
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
+}
+
+function shutdown() {
+  console.log('Shutting down gracefully...')
+  
+  server.close(() => {
+    console.log('Server closed')
+    process.exit(0)
+  })
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('Forcing shutdown')
+    process.exit(1)
+  }, 10000)
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error)
+  process.exit(1)
+})
+```
+
+## Node.js Only
+
+<Warning>
+The `serve` function only works in Node.js environments. It will throw an error if called in browser contexts.
+</Warning>
+
+```typescript
+import { serve } from '@botpress/sdk'
+import { isNode } from 'browser-or-node'
+
+if (!isNode) {
+  throw new Error('serve() can only be used in Node.js')
+}
+
+await serve(handler)
+```
+
+## Best Practices
+
+<Info>
+**Use environment variables** - Store configuration like API keys, webhook secrets, and port numbers in `.env` files.
+</Info>
+
+<Info>
+**Log requests** - Add logging to track incoming requests during development.
+</Info>
+
+<Info>
+**Validate signatures** - When handling webhooks, always verify signatures to ensure authenticity.
+</Info>
+
+<Info>
+**Handle errors gracefully** - Catch and log errors, returning appropriate HTTP status codes.
+</Info>
+
+## See Also
+
+- [Integration Implementation](/sdk/integration/implementation) - Implementing integration handlers
+- [Bot Implementation](/sdk/bot/implementation) - Implementing bot handlers
+- [Local Development](/cli/dev-and-serve) - Complete local development guide

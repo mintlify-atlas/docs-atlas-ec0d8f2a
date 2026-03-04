@@ -1,0 +1,156 @@
+---
+title: Package management
+description: Add and remove integrations and interfaces
+---
+
+Install and remove packages (integrations and interfaces) from your project.
+
+## Add packages
+
+Install an integration or interface:
+
+```bash
+bp add <package>
+```
+
+Aliases: `bp i`, `bp install`
+
+### Package reference
+
+Specify package name with optional version:
+
+```bash
+bp add teams
+bp add teams@0.2.0
+bp add llm@5.1.0
+```
+
+<Info>
+Package reference format: `name` or `name@version`
+</Info>
+
+## Options
+
+### --installPath
+
+Custom installation path:
+
+```bash
+bp add teams --installPath ./custom-integrations
+```
+
+Default: `./integrations`
+
+### --useDev
+
+Use development version if available:
+
+```bash
+bp add teams --useDev
+```
+
+### --alias
+
+Install with custom alias:
+
+```bash
+bp add teams --alias microsoft-teams
+```
+
+Useful when installing multiple versions or forks of same package.
+
+### Credentials
+
+Authentication options:
+
+```bash
+bp add teams --token YOUR_TOKEN
+bp add teams --workspaceId abc123
+bp add teams --apiUrl https://api.botpress.cloud
+```
+
+## Remove packages
+
+Remove a package from your project:
+
+```bash
+bp remove <alias>
+```
+
+Alias: `bp rm`
+
+### Usage
+
+```bash
+bp remove teams
+bp rm microsoft-teams
+```
+
+The alias parameter refers to the package alias in your project.
+
+## Examples
+
+### Install integration
+
+```bash
+bp add teams
+```
+
+### Install specific version
+
+```bash
+bp add teams@0.2.0
+```
+
+### Install with alias
+
+```bash
+bp add teams@0.2.0 --alias teams-legacy
+bp add teams@0.3.0 --alias teams-latest
+```
+
+### Remove package
+
+```bash
+bp remove teams
+```
+
+### Use development version
+
+```bash
+bp add teams --useDev
+```
+
+## Package discovery
+
+Browse available integrations:
+
+```bash
+bp integrations list
+```
+
+Browse available interfaces:
+
+```bash
+bp interfaces list
+```
+
+## After installation
+
+Packages are added to your project configuration:
+
+```json
+{
+  "integrations": {
+    "teams": {
+      "version": "0.2.0"
+    }
+  }
+}
+```
+
+Generate typings for installed packages:
+
+```bash
+bp generate
+```

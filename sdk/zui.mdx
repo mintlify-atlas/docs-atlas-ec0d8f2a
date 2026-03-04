@@ -1,0 +1,576 @@
+---
+title: ZUI
+description: Botpress UI schema system built on Zod for type-safe data validation and UI generation
+---
+
+ZUI (Zod UI) is Botpress's schema system built on top of [Zod](https://zod.dev). It extends Zod with additional metadata for automatic UI generation in Botpress Studio and the Dashboard.
+
+## Import
+
+```typescript
+import { z } from '@botpress/sdk'
+// or
+import z from '@botpress/sdk/zui'
+```
+
+<Info>
+ZUI is a re-export of the `@bpinternal/zui` package with Botpress-specific extensions. It includes all standard Zod functionality plus UI metadata capabilities.
+</Info>
+
+## Overview
+
+ZUI schemas serve three purposes:
+
+1. **Runtime validation** - Validate data at runtime
+2. **Type generation** - Generate TypeScript types for the SDK client
+3. **UI generation** - Generate forms and UI components in Botpress Studio
+
+## Basic Usage
+
+ZUI schemas are used throughout Botpress definitions:
+
+```typescript
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'my-integration',
+  version: '1.0.0',
+  
+  configuration: {
+    schema: z.object({
+      apiKey: z.string()
+        .min(1)
+        .title('API Key')
+        .describe('Your API key from the platform'),
+      
+      webhookUrl: z.string()
+        .url()
+        .title('Webhook URL')
+        .describe('URL for receiving webhooks'),
+      
+      maxRetries: z.number()
+        .int()
+        .min(0)
+        .max(10)
+        .default(3)
+        .title('Max Retries')
+        .describe('Maximum number of retry attempts')
+    })
+  },
+  
+  actions: {
+    sendNotification: {
+      input: {
+        schema: z.object({
+          userId: z.string(),
+          message: z.string(),
+          priority: z.enum(['low', 'normal', 'high']).default('normal')
+        })
+      },
+      output: {
+        schema: z.object({
+          notificationId: z.string(),
+          sentAt: z.string().datetime()
+        })
+      }
+    }
+  }
+})
+```
+
+## UI Metadata Methods
+
+ZUI extends Zod schemas with methods for UI generation:
+
+### title()
+
+Sets the display label in UI forms:
+
+```typescript
+z.string().title('API Key')
+z.number().title('Max Connections')
+z.boolean().title('Enable Feature')
+```
+
+### describe()
+
+Adds help text shown below the field:
+
+```typescript
+z.string()
+  .title('Webhook Secret')
+  .describe('Secret key used to verify webhook signatures. Find this in your platform settings.')
+```
+
+### placeholder()
+
+Sets placeholder text for input fields:
+
+```typescript
+z.string()
+  .title('Username')
+  .placeholder('john.doe')
+  .describe('Your platform username')
+```
+
+### default()
+
+Sets a default value:
+
+```typescript
+z.number().default(10)
+z.boolean().default(true)
+z.enum(['dev', 'prod']).default('dev')
+```
+
+### hidden()
+
+Hides the field from UI forms (but still validates):
+
+```typescript
+z.string().hidden()
+```
+
+## Standard Zod Types
+
+All standard Zod types are available:
+
+### Primitives
+
+```typescript
+z.string()          // string
+z.number()          // number
+z.boolean()         // boolean
+z.bigint()          // bigint
+z.date()            // Date object
+z.undefined()       // undefined
+z.null()            // null
+z.void()            // void
+z.any()             // any type
+z.unknown()         // unknown type
+```
+
+### String Validations
+
+```typescript
+z.string().min(5)                    // Minimum length
+z.string().max(100)                  // Maximum length
+z.string().length(10)                // Exact length
+z.string().email()                   // Email format
+z.string().url()                     // URL format
+z.string().uuid()                    // UUID format
+z.string().datetime()                // ISO 8601 datetime
+z.string().regex(/^[a-z]+$/)         // Custom regex
+z.string().startsWith('prefix')      // Starts with
+z.string().endsWith('suffix')        // Ends with
+z.string().includes('substring')     // Contains
+```
+
+### Number Validations
+
+```typescript
+z.number().int()                     // Integer only
+z.number().positive()                // > 0
+z.number().nonnegative()             // >= 0
+z.number().negative()                // < 0
+z.number().nonpositive()             // <= 0
+z.number().min(0)                    // Minimum value
+z.number().max(100)                  // Maximum value
+z.number().multipleOf(5)             // Multiple of value
+```
+
+### Objects
+
+```typescript
+z.object({
+  name: z.string(),
+  age: z.number(),
+  email: z.string().email()
+})
+
+// Optional fields
+z.object({
+  required: z.string(),
+  optional: z.string().optional()
+})
+
+// Extending objects
+const baseSchema = z.object({ id: z.string() })
+const extendedSchema = baseSchema.extend({
+  name: z.string()
+})
+```
+
+### Arrays
+
+```typescript
+z.array(z.string())                  // Array of strings
+z.array(z.number()).min(1)           // Non-empty array
+z.array(z.string()).max(10)          // Max 10 items
+z.array(z.string()).length(5)        // Exactly 5 items
+```
+
+### Enums
+
+```typescript
+z.enum(['dev', 'staging', 'prod'])
+z.enum(['low', 'normal', 'high']).default('normal')
+
+// Native TypeScript enums
+enum Environment {
+  Dev = 'dev',
+  Prod = 'prod'
+}
+z.nativeEnum(Environment)
+```
+
+### Unions
+
+```typescript
+// Union types
+z.union([z.string(), z.number()])
+z.string().or(z.number())            // Same as union
+
+// Discriminated unions
+z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string() }),
+  z.object({ type: z.literal('image'), imageUrl: z.string() })
+])
+```
+
+### Literals
+
+```typescript
+z.literal('exact-value')
+z.literal(42)
+z.literal(true)
+```
+
+### Records
+
+```typescript
+z.record(z.string())                 // { [key: string]: string }
+z.record(z.string(), z.number())     // { [key: string]: number }
+```
+
+### Tuples
+
+```typescript
+z.tuple([z.string(), z.number()])    // [string, number]
+z.tuple([z.string(), z.number()]).rest(z.boolean())  // [string, number, ...boolean[]]
+```
+
+## ZUI-Specific Types
+
+### z.ref()
+
+Create entity references for use in interfaces:
+
+```typescript
+const fileRef = z.ref('file')
+  .title('File')
+  .describe('Reference to a file entity')
+```
+
+<Info>
+Entity references are automatically created when defining interfaces. You typically don't need to create them manually.
+</Info>
+
+## Generic Schemas
+
+Interfaces use generic schemas that accept entity type parameters:
+
+```typescript
+export type GenericZuiSchema<
+  A extends Record<string, z.ZodTypeAny> = Record<string, z.ZodTypeAny>,
+  R extends z.ZodTypeAny = z.ZodTypeAny
+> = (typeArguments: A) => R
+```
+
+**Usage in interface definitions:**
+
+```typescript
+const myInterface = new InterfaceDefinition({
+  name: 'storage',
+  version: '1.0.0',
+  entities: {
+    file: {
+      schema: z.object({
+        id: z.string(),
+        name: z.string()
+      })
+    }
+  },
+  actions: {
+    uploadFile: {
+      input: {
+        // Generic schema receives entity references
+        schema: ({ file }) => z.object({
+          file: file,  // Reference to file entity
+          destination: z.string()
+        })
+      },
+      output: {
+        schema: ({ file }) => z.object({
+          uploadedFile: file
+        })
+      }
+    }
+  }
+})
+```
+
+## Type Helpers
+
+### ZuiObjectSchema
+
+```typescript
+export type ZuiObjectSchema = z.ZodObject | z.ZodRecord
+```
+
+Type representing object-like schemas (objects or records).
+
+### ZuiObjectOrRefSchema
+
+```typescript
+export type ZuiObjectOrRefSchema = ZuiObjectSchema | z.ZodRef
+```
+
+Type representing object schemas or entity references.
+
+## Utility Functions
+
+### mergeObjectSchemas()
+
+Merge two object schemas:
+
+```typescript
+import { z, mergeObjectSchemas } from '@botpress/sdk'
+
+const baseSchema = z.object({
+  id: z.string(),
+  name: z.string()
+})
+
+const extensionSchema = z.object({
+  description: z.string(),
+  createdAt: z.string().datetime()
+})
+
+const merged = mergeObjectSchemas(baseSchema, extensionSchema)
+// Result: { id, name, description, createdAt }
+```
+
+## Complete Configuration Example
+
+```typescript integration.definition.ts
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'github',
+  version: '1.0.0',
+  
+  configuration: {
+    schema: z.object({
+      // String fields with validation
+      personalAccessToken: z.string()
+        .min(1)
+        .title('Personal Access Token')
+        .describe('GitHub personal access token with repo permissions')
+        .placeholder('ghp_xxxxxxxxxxxx'),
+      
+      // URL validation
+      apiUrl: z.string()
+        .url()
+        .default('https://api.github.com')
+        .title('API URL')
+        .describe('GitHub API endpoint (use https://api.github.com for GitHub.com)'),
+      
+      // Enum selection
+      defaultBranch: z.enum(['main', 'master', 'develop'])
+        .default('main')
+        .title('Default Branch')
+        .describe('Default branch for repository operations'),
+      
+      // Number with constraints
+      maxIssuesPerPage: z.number()
+        .int()
+        .min(1)
+        .max(100)
+        .default(50)
+        .title('Issues Per Page')
+        .describe('Maximum number of issues to fetch per API call'),
+      
+      // Boolean toggle
+      enableWebhooks: z.boolean()
+        .default(true)
+        .title('Enable Webhooks')
+        .describe('Receive real-time notifications via webhooks'),
+      
+      // Optional field
+      webhookSecret: z.string()
+        .optional()
+        .title('Webhook Secret')
+        .describe('Secret for webhook signature verification (optional)'),
+      
+      // Array of strings
+      watchedRepositories: z.array(z.string())
+        .default([])
+        .title('Watched Repositories')
+        .describe('List of repositories to watch (format: owner/repo)'),
+      
+      // Record for key-value pairs
+      customHeaders: z.record(z.string(), z.string())
+        .default({})
+        .title('Custom Headers')
+        .describe('Additional HTTP headers to include in API requests')
+    })
+  },
+  
+  actions: {
+    createIssue: {
+      input: {
+        schema: z.object({
+          repository: z.string()
+            .title('Repository')
+            .describe('Repository in format owner/repo')
+            .regex(/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/),
+          
+          title: z.string()
+            .min(1)
+            .max(256)
+            .title('Issue Title'),
+          
+          body: z.string()
+            .title('Issue Body')
+            .describe('Markdown-formatted issue description'),
+          
+          labels: z.array(z.string())
+            .optional()
+            .title('Labels')
+            .describe('Labels to apply to the issue'),
+          
+          assignees: z.array(z.string())
+            .optional()
+            .title('Assignees')
+            .describe('GitHub usernames to assign'),
+          
+          milestone: z.number()
+            .int()
+            .positive()
+            .optional()
+            .title('Milestone')
+            .describe('Milestone number')
+        })
+      },
+      output: {
+        schema: z.object({
+          issueNumber: z.number().int(),
+          issueUrl: z.string().url(),
+          createdAt: z.string().datetime()
+        })
+      }
+    }
+  },
+  
+  entities: {
+    issue: {
+      title: 'GitHub Issue',
+      schema: z.object({
+        id: z.number(),
+        number: z.number(),
+        title: z.string(),
+        body: z.string(),
+        state: z.enum(['open', 'closed']),
+        labels: z.array(z.string()),
+        url: z.string().url(),
+        createdAt: z.string().datetime(),
+        updatedAt: z.string().datetime()
+      })
+    }
+  }
+})
+```
+
+## Validation Example
+
+ZUI schemas validate data at runtime:
+
+```typescript
+const schema = z.object({
+  name: z.string().min(3),
+  age: z.number().int().positive()
+})
+
+// Valid data
+const result = schema.parse({ name: 'John', age: 30 })
+// Returns: { name: 'John', age: 30 }
+
+// Invalid data
+try {
+  schema.parse({ name: 'Jo', age: -5 })
+} catch (error) {
+  // ZodError with validation details
+}
+
+// Safe parsing (returns success/error object)
+const safeResult = schema.safeParse({ name: 'John', age: 30 })
+if (safeResult.success) {
+  console.log(safeResult.data)
+} else {
+  console.error(safeResult.error)
+}
+```
+
+## TypeScript Integration
+
+Extract TypeScript types from ZUI schemas:
+
+```typescript
+const userSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  age: z.number().optional()
+})
+
+// Extract TypeScript type
+type User = z.infer<typeof userSchema>
+// Equivalent to:
+// type User = {
+//   id: string
+//   name: string
+//   email: string
+//   age?: number
+// }
+
+// Use in functions
+function processUser(user: User) {
+  console.log(user.name)
+}
+```
+
+## Best Practices
+
+<Info>
+**Always add UI metadata** - Use `.title()` and `.describe()` on all fields to provide a good user experience in Botpress Studio.
+</Info>
+
+<Info>
+**Use specific validations** - Add constraints like `.min()`, `.max()`, `.email()`, `.url()` to ensure data quality.
+</Info>
+
+<Info>
+**Provide sensible defaults** - Use `.default()` for optional configuration to reduce setup friction.
+</Info>
+
+<Warning>
+**Avoid circular references** - ZUI schemas cannot have circular references. Use entity references via interfaces instead.
+</Warning>
+
+## See Also
+
+- [Zod Documentation](https://zod.dev) - Complete Zod reference
+- [IntegrationDefinition](/sdk/integration/definition) - Using ZUI in integrations
+- [InterfaceDefinition](/sdk/interface/definition) - Using ZUI in interfaces
+- [Messages](/sdk/messages) - Pre-built message schemas

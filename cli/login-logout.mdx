@@ -1,0 +1,185 @@
+---
+title: Authentication
+description: Login and logout of Botpress Cloud
+---
+
+Authenticate with Botpress Cloud to deploy projects and manage resources.
+
+## Login
+
+Authenticate with Botpress Cloud:
+
+```bash
+bp login
+```
+
+### Interactive login
+
+Running `bp login` without options opens your browser to authenticate.
+
+### Options
+
+#### --token
+
+Provide Personal Access Token directly:
+
+```bash
+bp login --token YOUR_PAT
+```
+
+<Info>
+Create PATs at [app.botpress.cloud/profile/tokens](https://app.botpress.cloud/profile/tokens)
+</Info>
+
+#### --workspaceId
+
+Specify workspace ID:
+
+```bash
+bp login --token YOUR_PAT --workspaceId abc123
+```
+
+#### --apiUrl
+
+Use custom API endpoint:
+
+```bash
+bp login --apiUrl https://api.botpress.cloud
+```
+
+Default: `https://api.botpress.cloud`
+
+### CI/CD authentication
+
+For automated environments:
+
+```bash
+bp login --token $BOTPRESS_TOKEN --workspaceId $WORKSPACE_ID -y
+```
+
+## Logout
+
+Clear stored credentials:
+
+```bash
+bp logout
+```
+
+This removes:
+- Personal Access Token
+- Workspace ID
+- API URL configuration
+
+## Credential storage
+
+Credentials are stored in:
+
+```
+~/.botpress/config.json
+```
+
+<Warning>
+Keep your Personal Access Token secure. Never commit it to version control.
+</Warning>
+
+## Examples
+
+### Interactive login
+
+```bash
+bp login
+```
+
+Opens browser for authentication.
+
+### Login with token
+
+```bash
+bp login --token bp_pat_1234567890abcdef
+```
+
+### Login for specific workspace
+
+```bash
+bp login --token bp_pat_1234567890abcdef --workspaceId ws_abc123
+```
+
+### Logout
+
+```bash
+bp logout
+```
+
+### CI/CD example
+
+```bash
+# In your CI/CD pipeline
+export BOTPRESS_TOKEN=${{ secrets.BOTPRESS_TOKEN }}
+export WORKSPACE_ID=${{ secrets.WORKSPACE_ID }}
+
+bp login --token $BOTPRESS_TOKEN --workspaceId $WORKSPACE_ID -y
+bp deploy
+```
+
+## Multiple workspaces
+
+Use [profiles](/cli/profile-management) to manage multiple workspaces:
+
+```bash
+# Create profiles
+bp login --token TOKEN_DEV --workspaceId ws_dev
+bp profiles use dev
+
+bp login --token TOKEN_PROD --workspaceId ws_prod
+bp profiles use prod
+
+# Switch between workspaces
+bp profiles use dev
+bp deploy
+
+bp profiles use prod
+bp deploy
+```
+
+## Verify authentication
+
+Check active profile:
+
+```bash
+bp profiles active
+```
+
+Output:
+```
+Workspace: acme (ws_abc123)
+API URL: https://api.botpress.cloud
+Authenticated: Yes
+```
+
+## Troubleshooting
+
+### Invalid token
+
+Ensure your PAT is valid and not expired:
+
+1. Visit [app.botpress.cloud/profile/tokens](https://app.botpress.cloud/profile/tokens)
+2. Generate new token if needed
+3. Login with new token
+
+### Wrong workspace
+
+Verify workspace ID:
+
+```bash
+bp profiles active
+```
+
+Switch workspace:
+
+```bash
+bp login --workspaceId correct_workspace_id
+```
+
+### Permission denied
+
+Ensure your token has required permissions for the operation you're attempting.

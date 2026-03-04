@@ -1,0 +1,488 @@
+---
+title: InterfaceDefinition
+description: Define reusable interface contracts for entities, actions, events, and channels
+---
+
+The `InterfaceDefinition` class defines a reusable contract that integrations can implement. Interfaces allow you to standardize common patterns (like HITL, LLM, or storage capabilities) across multiple integrations.
+
+## Constructor
+
+```typescript
+import { InterfaceDefinition } from '@botpress/sdk'
+
+const interface = new InterfaceDefinition(props: InterfaceDefinitionProps)
+```
+
+## InterfaceDefinitionProps
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the interface.
+  
+  ```typescript
+  name: 'hitl'
+  ```
+</ParamField>
+
+<ParamField path="version" type="string" required>
+  Semantic version of the interface.
+  
+  ```typescript
+  version: '2.0.0'
+  ```
+</ParamField>
+
+<ParamField path="title" type="string" optional>
+  Human-readable title for the interface.
+  
+  ```typescript
+  title: 'Human-in-the-Loop Interface'
+  ```
+</ParamField>
+
+<ParamField path="description" type="string" optional>
+  Brief description of what the interface provides.
+</ParamField>
+
+<ParamField path="icon" type="string" optional>
+  Path to icon file (SVG recommended).
+  
+  ```typescript
+  icon: 'icon.svg'
+  ```
+</ParamField>
+
+<ParamField path="readme" type="string" optional>
+  Path to readme/documentation file.
+</ParamField>
+
+<ParamField path="entities" type="object" optional>
+  Entity definitions that integrations must provide schemas for.
+  
+  ```typescript
+  entities: {
+    hitlSession: {
+      title: 'HITL Session',
+      description: 'A HITL session, often referred to as a ticket',
+      schema: z.object({})
+    },
+    modelRef: {
+      schema: ModelRefSchema
+    }
+  }
+  ```
+  
+  <Info>
+  Entities in interfaces act as type parameters. Integrations that implement the interface must map these to concrete entity types.
+  </Info>
+</ParamField>
+
+<ParamField path="events" type="object" optional>
+  Event definitions the interface can emit. Events can reference entities.
+  
+  ```typescript
+  events: {
+    hitlAssigned: {
+      schema: () => z.object({
+        conversationId: z.string()
+          .title('HITL session ID')
+          .describe('ID of the Botpress conversation'),
+        userId: z.string()
+          .title('Human agent user ID')
+      }),
+      attributes: {
+        ...WELL_KNOWN_ATTRIBUTES.HIDDEN_IN_STUDIO
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="actions" type="object" optional>
+  Action definitions that integrations must implement.
+  
+  ```typescript
+  actions: {
+    generateContent: {
+      billable: true,
+      cacheable: true,
+      input: {
+        schema: ({ modelRef }) => GenerateContentInputSchema(modelRef)
+      },
+      output: {
+        schema: () => GenerateContentOutputSchema
+      }
+    }
+  }
+  ```
+  
+  <Info>
+  Actions can use entity references in their schemas. The `schema` property is a function that receives entity references as a parameter.
+  </Info>
+</ParamField>
+
+<ParamField path="channels" type="object" optional>
+  Channel definitions for message-based communication.
+  
+  ```typescript
+  channels: {
+    hitl: {
+      messages: {
+        text: {
+          schema: () => z.object({
+            text: z.string(),
+            userId: z.string().optional()
+          })
+        },
+        image: {
+          schema: () => z.object({
+            imageUrl: z.string(),
+            userId: z.string().optional()
+          })
+        }
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="attributes" type="object" optional>
+  Custom metadata attributes.
+  
+  ```typescript
+  attributes: {
+    category: 'AI',
+    platform: 'Cloud'
+  }
+  ```
+</ParamField>
+
+<ParamField path="__advanced" type="object" optional>
+  Advanced configuration options.
+  
+  ```typescript
+  __advanced: {
+    useLegacyZuiTransformer: true
+  }
+  ```
+</ParamField>
+
+## Type Definitions
+
+### GenericEventDefinition
+
+```typescript
+type GenericEventDefinition<TEntities, TEvent> = {
+  schema: GenericZuiSchema<EntityReferences<TEntities>, TEvent>
+  attributes?: Record<string, string>
+}
+```
+
+Defines an event that can reference entities defined in the interface.
+
+### GenericActionDefinition
+
+```typescript
+type GenericActionDefinition<TEntities, TAction> = {
+  title?: string
+  description?: string
+  billable?: boolean
+  cacheable?: boolean
+  input: { schema: GenericZuiSchema<EntityReferences<TEntities>, TAction> }
+  output: { schema: GenericZuiSchema<EntityReferences<TEntities>, ZuiObjectSchema> }
+  attributes?: Record<string, string>
+}
+```
+
+Defines an action with input/output schemas that can reference entities.
+
+### GenericChannelDefinition
+
+```typescript
+type GenericChannelDefinition<TEntities, TChannel> = {
+  messages: {
+    [K in keyof TChannel]: {
+      schema: GenericZuiSchema<EntityReferences<TEntities>, TChannel[K]>
+    }
+  }
+}
+```
+
+Defines a channel with message types that can reference entities.
+
+## Properties
+
+<ResponseField name="name" type="string">
+  The interface name.
+</ResponseField>
+
+<ResponseField name="version" type="string">
+  The interface version.
+</ResponseField>
+
+<ResponseField name="title" type="string | undefined">
+  Human-readable title.
+</ResponseField>
+
+<ResponseField name="description" type="string | undefined">
+  Interface description.
+</ResponseField>
+
+<ResponseField name="entities" type="object">
+  Entity definitions defined by the interface.
+</ResponseField>
+
+<ResponseField name="events" type="object">
+  Event definitions with resolved entity references.
+</ResponseField>
+
+<ResponseField name="actions" type="object">
+  Action definitions with resolved entity references.
+</ResponseField>
+
+<ResponseField name="channels" type="object">
+  Channel definitions with resolved entity references.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Interface metadata including SDK version.
+  
+  ```typescript
+  {
+    sdkVersion: string
+  }
+  ```
+</ResponseField>
+
+## Understanding Entity References
+
+Interfaces use a generic system where entities act as type parameters. When you define an action or event schema, you receive entity references that can be used in your schema:
+
+```typescript
+const myInterface = new InterfaceDefinition({
+  name: 'example',
+  version: '1.0.0',
+  entities: {
+    file: {
+      schema: z.object({
+        id: z.string(),
+        name: z.string()
+      })
+    }
+  },
+  actions: {
+    uploadFile: {
+      input: {
+        // The entities parameter contains references to defined entities
+        schema: ({ file }) => z.object({
+          file: file, // Reference to the file entity
+          destination: z.string()
+        })
+      },
+      output: {
+        schema: ({ file }) => z.object({
+          uploadedFile: file
+        })
+      }
+    }
+  }
+})
+```
+
+The entity references are automatically transformed to use `z.ref()` internally, allowing integrations to map them to concrete entity types.
+
+## Complete Example: HITL Interface
+
+```typescript interface.definition.ts
+import { InterfaceDefinition, z } from '@botpress/sdk'
+import * as messages from '@botpress/sdk/messages'
+
+export default new InterfaceDefinition({
+  name: 'hitl',
+  version: '2.0.0',
+  title: 'Human-in-the-Loop',
+  description: 'Interface for human agent handoff systems',
+  
+  // Define entity templates
+  entities: {
+    hitlSession: {
+      title: 'HITL session',
+      description: 'A HITL session, often referred to as a ticket',
+      schema: z.object({}) // Integrations will extend this
+    }
+  },
+  
+  // Events that integrations must fire
+  events: {
+    hitlAssigned: {
+      schema: () => z.object({
+        conversationId: z.string()
+          .title('HITL session ID')
+          .describe('ID of the Botpress conversation representing the HITL session'),
+        userId: z.string()
+          .title('Human agent user ID')
+          .describe('ID of the Botpress user representing the human agent')
+      }),
+      attributes: {
+        hiddenInStudio: 'true'
+      }
+    },
+    hitlStopped: {
+      schema: () => z.object({
+        conversationId: z.string()
+          .title('HITL session ID')
+      }),
+      attributes: {
+        hiddenInStudio: 'true'
+      }
+    }
+  },
+  
+  // Actions that integrations must implement
+  actions: {
+    createUser: {
+      title: 'Create external user',
+      description: 'Create an end user in the external service',
+      input: {
+        schema: () => z.object({
+          name: z.string().title('Display name'),
+          pictureUrl: z.string().title('Picture URL').optional(),
+          email: z.string().title('Email address').optional()
+        })
+      },
+      output: {
+        schema: () => z.object({
+          userId: z.string().title('Botpress user ID')
+        })
+      },
+      attributes: {
+        hiddenInStudio: 'true'
+      }
+    },
+    startHitl: {
+      title: 'Start new HITL session',
+      description: 'Create a new HITL session in the external service',
+      input: {
+        schema: (entities) => z.object({
+          userId: z.string().title('User ID'),
+          title: z.string().title('Title').optional(),
+          description: z.string().title('Description').optional(),
+          hitlSession: entities.hitlSession
+            .optional()
+            .title('Extra configuration'),
+          messageHistory: z.array(z.any())
+            .title('Conversation history')
+        })
+      },
+      output: {
+        schema: () => z.object({
+          conversationId: z.string().title('HITL session ID')
+        })
+      },
+      attributes: {
+        hiddenInStudio: 'true'
+      }
+    },
+    stopHitl: {
+      title: 'Stop HITL session',
+      description: 'Stop an existing HITL session',
+      input: {
+        schema: () => z.object({
+          conversationId: z.string().title('HITL session ID')
+        })
+      },
+      output: {
+        schema: () => z.object({})
+      },
+      attributes: {
+        hiddenInStudio: 'true'
+      }
+    }
+  },
+  
+  // Message channels
+  channels: {
+    hitl: {
+      messages: {
+        text: {
+          schema: () => z.object({
+            text: z.string(),
+            userId: z.string().optional()
+              .describe('Allows sending a message as a certain user')
+          })
+        },
+        image: {
+          schema: () => z.object({
+            imageUrl: z.string(),
+            userId: z.string().optional()
+          })
+        }
+      }
+    }
+  }
+})
+```
+
+## Complete Example: LLM Interface
+
+```typescript interface.definition.ts
+import { InterfaceDefinition, z } from '@botpress/sdk'
+import * as llmSchemas from './schemas'
+
+export default new InterfaceDefinition({
+  name: 'llm',
+  version: '9.0.1',
+  title: 'Large Language Model',
+  description: 'Interface for LLM providers',
+  
+  entities: {
+    modelRef: {
+      schema: llmSchemas.ModelRefSchema
+    }
+  },
+  
+  actions: {
+    generateContent: {
+      billable: true,
+      cacheable: true,
+      input: {
+        schema: ({ modelRef }) => 
+          llmSchemas.GenerateContentInputSchema(modelRef)
+      },
+      output: {
+        schema: () => llmSchemas.GenerateContentOutputSchema
+      }
+    },
+    listLanguageModels: {
+      input: {
+        schema: () => z.object({})
+      },
+      output: {
+        schema: ({ modelRef }) => z.object({
+          models: z.array(z.intersection(
+            llmSchemas.ModelSchema,
+            modelRef
+          ))
+        })
+      }
+    }
+  }
+})
+```
+
+## Implementing an Interface
+
+Integrations implement interfaces using the `extend` method. See [IntegrationDefinition](/sdk/integration/definition#extend) for details on implementing interfaces.
+
+<Note>
+When an integration extends an interface, it must:
+- Map interface entities to concrete entity types
+- Implement all required actions
+- Fire all required events
+- Support all defined channels
+</Note>
+
+## See Also
+
+- [IntegrationDefinition](/sdk/integration/definition) - Define and extend interfaces in integrations
+- [ZUI](/sdk/zui) - Schema system used for entity, action, and event definitions
+- [EntityDefinition](/sdk/integration/definition#entitydefinition) - Entity definition reference

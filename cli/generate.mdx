@@ -1,0 +1,141 @@
+---
+title: bp generate
+description: Generate TypeScript typings for intellisense
+---
+
+Generate TypeScript type definitions for your Botpress project to enable autocomplete and type checking.
+
+## Usage
+
+```bash
+bp generate
+```
+
+Alias: `bp gen`
+
+## What it does
+
+The generate command:
+
+1. Analyzes your project definition
+2. Reads installed integrations and interfaces
+3. Generates TypeScript type definitions
+4. Outputs `.d.ts` files for intellisense
+
+## Options
+
+### --workDir
+
+Specify project directory:
+
+```bash
+bp generate --workDir ./my-project
+```
+
+Default: current directory
+
+### Global options
+
+All [global options](/cli/overview#global-options) are available:
+
+```bash
+bp generate --verbose
+bp generate -y
+```
+
+## Generated files
+
+Typings are generated in:
+
+```
+.botpress/
+├── implementation.ts
+└── types.d.ts
+```
+
+These files provide:
+- Type definitions for events
+- Type definitions for actions
+- Type definitions for states
+- Type definitions for configurations
+- Autocomplete for installed integrations
+
+## When to generate
+
+Run `bp generate` after:
+
+- Creating a new project
+- Installing integrations/interfaces
+- Updating project definition
+- Changing events, actions, or states
+
+<Info>
+Generate is automatically run during `bp build`
+</Info>
+
+## Examples
+
+### Generate for current project
+
+```bash
+bp generate
+```
+
+### Generate for specific project
+
+```bash
+bp generate --workDir ./my-bot
+```
+
+### Generate with verbose output
+
+```bash
+bp generate --verbose
+```
+
+## Integration with IDEs
+
+Generated types enable:
+
+- IntelliSense in VS Code
+- Type checking in TypeScript
+- Autocomplete for Botpress APIs
+- Go-to-definition navigation
+
+## Development workflow
+
+```bash
+# Install integration
+bp add teams
+
+# Generate types
+bp generate
+
+# Now enjoy autocomplete!
+code .
+```
+
+## Troubleshooting
+
+### Types not showing up
+
+Ensure your IDE is using the workspace TypeScript version:
+
+1. Open command palette
+2. Select "TypeScript: Select TypeScript Version"
+3. Choose "Use Workspace Version"
+
+### Outdated types
+
+Regenerate after any project changes:
+
+```bash
+bp generate
+```
+
+### Build vs Generate
+
+- `bp generate`: Only generates types
+- `bp build`: Generates types AND bundles code
+
+Use `generate` for faster iteration during development.

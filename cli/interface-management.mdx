@@ -1,0 +1,172 @@
+---
+title: Interface management
+description: Manage Botpress interfaces
+---
+
+View and manage interfaces in your Botpress workspace.
+
+## Get interface
+
+Retrieve details about a specific interface:
+
+```bash
+bp interfaces get <interface>
+```
+
+### Interface reference
+
+Specify interface name and version:
+
+```bash
+bp interfaces get llm@5.1.0
+```
+
+## List interfaces
+
+List all available interfaces:
+
+```bash
+bp interfaces list
+```
+
+Alias: `bp interfaces ls`
+
+## Delete interface
+
+Delete an interface:
+
+```bash
+bp interfaces delete <interface>
+```
+
+Alias: `bp interfaces rm`
+
+### Usage
+
+```bash
+bp interfaces delete llm@5.1.0
+```
+
+<Warning>
+Deleting an interface is permanent and cannot be undone.
+</Warning>
+
+## Options
+
+### Authentication
+
+All commands support authentication options:
+
+```bash
+bp interfaces list --token YOUR_TOKEN
+bp interfaces list --workspaceId abc123
+bp interfaces list --apiUrl https://api.botpress.cloud
+```
+
+### Global options
+
+All [global options](/cli/overview#global-options) are available:
+
+```bash
+bp interfaces list --json
+bp interfaces list --verbose
+```
+
+## Examples
+
+### List all interfaces
+
+```bash
+bp interfaces list
+```
+
+### Get interface details
+
+```bash
+bp interfaces get llm@5.1.0
+```
+
+### Delete interface
+
+```bash
+bp interfaces delete llm@5.0.0
+```
+
+### JSON output
+
+```bash
+bp interfaces list --json > interfaces.json
+```
+
+### Skip confirmation
+
+```bash
+bp interfaces delete llm@5.0.0 -y
+```
+
+## Interface details
+
+The get command displays:
+
+- Interface ID
+- Name and version
+- Description
+- Actions available
+- Events supported
+- Schema definitions
+- Compatible integrations
+
+## Use cases
+
+### Browse available interfaces
+
+```bash
+bp interfaces list
+```
+
+### Check interface version
+
+```bash
+bp interfaces get llm@5.1.0
+```
+
+### Export interface list
+
+```bash
+bp interfaces list --json > workspace-interfaces.json
+```
+
+### Clean up old versions
+
+```bash
+bp interfaces delete llm@5.0.0
+```
+
+## What are interfaces?
+
+Interfaces define contracts that integrations can implement:
+
+- **LLM Interface**: Language model capabilities
+- **Speech Interface**: Speech-to-text and text-to-speech
+- **Vision Interface**: Image analysis capabilities
+
+Integrations implement interfaces to provide standardized functionality.
+
+## Finding interfaces
+
+List interfaces to see what's available:
+
+```bash
+bp interfaces list
+```
+
+Install integrations that implement interfaces:
+
+```bash
+bp add gpt --interface llm@5.1.0
+```
+
+## Related commands
+
+- [`bp add`](/cli/add-remove) - Install integrations and interfaces
+- [`bp integrations list`](/cli/integration-management) - List integrations implementing interfaces

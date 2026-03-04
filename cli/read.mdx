@@ -1,0 +1,173 @@
+---
+title: bp read
+description: Read and parse integration definitions
+---
+
+Read and display the structure of an integration definition file.
+
+## Usage
+
+```bash
+bp read
+```
+
+## What it does
+
+The read command:
+
+1. Locates integration definition
+2. Parses the integration.definition.ts file
+3. Validates the schema
+4. Displays structured output
+
+## Options
+
+### --workDir
+
+Specify integration directory:
+
+```bash
+bp read --workDir ./my-integration
+```
+
+Default: current directory
+
+### Global options
+
+All [global options](/cli/overview#global-options) are available:
+
+```bash
+bp read --verbose
+bp read --json
+```
+
+## Output
+
+Displays integration structure:
+
+- Name and version
+- Description
+- Actions
+- Events
+- Channels
+- States
+- Configuration schema
+- User tags
+- Secrets
+
+## JSON output
+
+Use `--json` for machine-readable output:
+
+```bash
+bp read --json > integration.json
+```
+
+## Examples
+
+### Read current integration
+
+```bash
+cd my-integration
+bp read
+```
+
+### Read specific integration
+
+```bash
+bp read --workDir ./integrations/teams
+```
+
+### Export to JSON
+
+```bash
+bp read --json > definition.json
+```
+
+### Verbose output
+
+```bash
+bp read --verbose
+```
+
+## Use cases
+
+### Verify integration structure
+
+Quickly check your integration definition:
+
+```bash
+bp read
+```
+
+### Debug integration issues
+
+Use verbose mode to see parsing details:
+
+```bash
+bp read --verbose
+```
+
+### Integration documentation
+
+Export definition for documentation:
+
+```bash
+bp read --json > docs/integration-schema.json
+```
+
+### CI/CD validation
+
+Validate definition in pipeline:
+
+```bash
+bp read --json || exit 1
+```
+
+## Integration definition
+
+The command reads from:
+
+```
+integration.definition.ts
+```
+
+Example definition:
+
+```typescript
+import { IntegrationDefinition } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'my-integration',
+  version: '0.1.0',
+  actions: {
+    sendMessage: {
+      title: 'Send Message',
+      input: {
+        schema: z.object({
+          text: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          messageId: z.string()
+        })
+      }
+    }
+  },
+  events: {
+    messageReceived: {
+      schema: z.object({
+        text: z.string(),
+        userId: z.string()
+      })
+    }
+  }
+})
+```
+
+## Related commands
+
+- [`bp lint`](/cli/experimental#lint) - Lint integration definition (experimental)
+- [`bp generate`](/cli/generate) - Generate types from definition
+- [`bp build`](/cli/build-and-bundle) - Build integration for deployment

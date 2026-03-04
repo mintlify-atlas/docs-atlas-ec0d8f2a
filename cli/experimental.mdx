@@ -1,0 +1,230 @@
+---
+title: Experimental commands
+description: Preview experimental CLI features
+---
+
+<Warning>
+Experimental commands are unstable and may change without notice. Use at your own risk.
+</Warning>
+
+Experimental features currently being developed for the Botpress CLI.
+
+## Lint
+
+Lint an integration definition for errors and best practices:
+
+```bash
+bp lint
+```
+
+<Warning>
+**EXPERIMENTAL**: This command is under active development and may change.
+</Warning>
+
+### Usage
+
+```bash
+cd my-integration
+bp lint
+```
+
+### Options
+
+#### --workDir
+
+Specify integration directory:
+
+```bash
+bp lint --workDir ./my-integration
+```
+
+### What it checks
+
+The lint command validates:
+
+- Integration definition syntax
+- Schema validation errors
+- Best practice violations
+- Naming conventions
+- Required fields
+- Type correctness
+
+### Example output
+
+```
+✓ Integration definition syntax valid
+✓ All schemas valid
+⚠ Warning: Consider adding description to action 'sendMessage'
+✗ Error: Event 'messageReceived' missing required schema
+
+1 error, 1 warning
+```
+
+### Use cases
+
+#### Pre-deployment validation
+
+```bash
+bp lint
+if [ $? -eq 0 ]; then
+  bp deploy
+fi
+```
+
+#### CI/CD integration
+
+```bash
+# In your pipeline
+bp lint || exit 1
+```
+
+#### Development workflow
+
+```bash
+# Check before committing
+bp lint --verbose
+```
+
+## Chat
+
+Interact with a deployed bot directly from the CLI:
+
+```bash
+bp chat <botId>
+```
+
+<Warning>
+**EXPERIMENTAL**: This command is under active development and may change.
+</Warning>
+
+### Usage
+
+```bash
+bp chat abc123
+```
+
+The bot ID is required as a positional argument.
+
+### Options
+
+#### --chatApiUrl
+
+Custom chat API endpoint:
+
+```bash
+bp chat abc123 --chatApiUrl https://chat.botpress.cloud
+```
+
+#### Authentication
+
+Requires authentication:
+
+```bash
+bp chat abc123 --token YOUR_TOKEN --workspaceId ws_abc123
+```
+
+### Interactive mode
+
+The chat command starts an interactive session:
+
+```
+> Hello
+Bot: Hi! How can I help you today?
+
+> What can you do?
+Bot: I can assist you with...
+
+> exit
+Goodbye!
+```
+
+### Commands
+
+In chat mode:
+
+- Type your message and press Enter
+- `exit` or `quit` to end session
+- `clear` to clear screen
+- `help` for available commands
+
+### Examples
+
+#### Start chat session
+
+```bash
+bp chat abc123
+```
+
+#### Chat with authentication
+
+```bash
+bp chat abc123 --token $BP_TOKEN --workspaceId $WS_ID
+```
+
+#### Custom endpoint
+
+```bash
+bp chat abc123 --chatApiUrl https://custom.api.endpoint
+```
+
+### Use cases
+
+#### Quick bot testing
+
+```bash
+bp chat abc123
+```
+
+Test your bot without opening the web interface.
+
+#### Automated testing
+
+```bash
+echo "test message" | bp chat abc123
+```
+
+#### CI/CD smoke tests
+
+```bash
+# Test bot responds
+echo "hello" | bp chat $BOT_ID | grep -q "response"
+```
+
+## Providing feedback
+
+Experimental features need your feedback!
+
+### Report issues
+
+File issues at [github.com/botpress/botpress](https://github.com/botpress/botpress)
+
+### Feature requests
+
+Share your ideas in the Botpress Discord community.
+
+### Stability
+
+Experimental commands:
+
+- May have bugs
+- May change behavior
+- May be removed
+- Are not production-ready
+
+<Info>
+Once stable, experimental commands will be promoted to regular commands and fully documented.
+</Info>
+
+## Migration notice
+
+When experimental commands are promoted:
+
+- Breaking changes will be announced
+- Migration guides will be provided
+- Deprecation period will be given
+
+## Related commands
+
+- [`bp read`](/cli/read) - Read integration definition (stable)
+- [`bp generate`](/cli/generate) - Generate types (stable)
+- [`bp deploy`](/cli/deploy) - Deploy projects (stable)

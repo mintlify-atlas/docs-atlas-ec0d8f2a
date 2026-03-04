@@ -1,0 +1,203 @@
+---
+title: Plugin management
+description: Manage Botpress plugins
+---
+
+View and manage plugins in your Botpress workspace.
+
+## Get plugin
+
+Retrieve details about a specific plugin:
+
+```bash
+bp plugins get <plugin>
+```
+
+### Plugin reference
+
+Specify plugin name and version:
+
+```bash
+bp plugins get knowledge@0.0.1
+```
+
+## List plugins
+
+List all available plugins:
+
+```bash
+bp plugins list
+```
+
+Alias: `bp plugins ls`
+
+### Filter options
+
+#### --name
+
+Filter by plugin name:
+
+```bash
+bp plugins list --name knowledge
+```
+
+#### --versionNumber
+
+Filter by version:
+
+```bash
+bp plugins list --versionNumber 0.0.1
+```
+
+### Combined filters
+
+```bash
+bp plugins list --name knowledge --versionNumber 0.0.1
+```
+
+## Delete plugin
+
+Delete a plugin:
+
+```bash
+bp plugins delete <plugin>
+```
+
+Alias: `bp plugins rm`
+
+### Usage
+
+```bash
+bp plugins delete knowledge@0.0.1
+```
+
+<Warning>
+Deleting a plugin is permanent and cannot be undone.
+</Warning>
+
+## Options
+
+### Authentication
+
+All commands support authentication options:
+
+```bash
+bp plugins list --token YOUR_TOKEN
+bp plugins list --workspaceId abc123
+bp plugins list --apiUrl https://api.botpress.cloud
+```
+
+### Global options
+
+All [global options](/cli/overview#global-options) are available:
+
+```bash
+bp plugins list --json
+bp plugins list --verbose
+```
+
+## Examples
+
+### List all plugins
+
+```bash
+bp plugins list
+```
+
+### Get plugin details
+
+```bash
+bp plugins get knowledge@0.0.1
+```
+
+### Filter by name
+
+```bash
+bp plugins list --name knowledge
+```
+
+### Delete plugin
+
+```bash
+bp plugins delete knowledge@0.0.1
+```
+
+### JSON output
+
+```bash
+bp plugins list --json > plugins.json
+```
+
+### Skip confirmation
+
+```bash
+bp plugins delete knowledge@0.0.1 -y
+```
+
+## Plugin details
+
+The get command displays:
+
+- Plugin ID
+- Name and version
+- Description
+- Configuration schema
+- Required permissions
+- Dependencies
+- Installation status
+
+## Use cases
+
+### Browse available plugins
+
+```bash
+bp plugins list
+```
+
+### Check plugin version
+
+```bash
+bp plugins get knowledge@0.0.1
+```
+
+### Export plugin list
+
+```bash
+bp plugins list --json > workspace-plugins.json
+```
+
+### Clean up old versions
+
+```bash
+bp plugins delete knowledge@0.0.1
+```
+
+## What are plugins?
+
+Plugins extend Botpress functionality:
+
+- **Knowledge Plugin**: Add knowledge bases and RAG capabilities
+- **Analytics Plugin**: Track and analyze bot performance
+- **Custom Plugins**: Build your own extensions
+
+Plugins are installed at the workspace level and available to all bots.
+
+## Installing plugins
+
+Use the init command to create a new plugin:
+
+```bash
+bp init --type plugin --name acme/my-plugin
+```
+
+Deploy to your workspace:
+
+```bash
+cd my-plugin
+bp deploy
+```
+
+## Related commands
+
+- [`bp init`](/cli/init) - Create new plugin project
+- [`bp deploy`](/cli/deploy) - Deploy plugin to workspace

@@ -1,0 +1,497 @@
+---
+title: Messages
+description: Pre-built message schema definitions for common message types
+---
+
+The `messages` namespace provides ready-to-use message schema definitions for common message types used in channels. These schemas are built with [ZUI](/sdk/zui) and can be used directly or extended in channel definitions.
+
+## Import
+
+```typescript
+import { messages } from '@botpress/sdk'
+```
+
+## Default Message Types
+
+The `messages.defaults` object contains standard message schemas for common message types.
+
+### Text Message
+
+```typescript
+messages.defaults.text
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for text messages.
+  
+  ```typescript
+  z.object({
+    text: z.string().min(1)
+  })
+  ```
+</ResponseField>
+
+**Example Usage:**
+
+```typescript
+channels: {
+  channel: {
+    messages: {
+      text: messages.defaults.text
+    }
+  }
+}
+```
+
+### Image Message
+
+```typescript
+messages.defaults.image
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for image messages.
+  
+  ```typescript
+  z.object({
+    imageUrl: z.string().min(1),
+    title: z.string().min(1).optional()
+  })
+  ```
+</ResponseField>
+
+**Example:**
+
+```typescript
+channels: {
+  channel: {
+    messages: {
+      image: messages.defaults.image
+    }
+  }
+}
+```
+
+### Audio Message
+
+```typescript
+messages.defaults.audio
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for audio messages.
+  
+  ```typescript
+  z.object({
+    audioUrl: z.string().min(1),
+    title: z.string().min(1).optional()
+  })
+  ```
+</ResponseField>
+
+### Video Message
+
+```typescript
+messages.defaults.video
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for video messages.
+  
+  ```typescript
+  z.object({
+    videoUrl: z.string().min(1),
+    title: z.string().min(1).optional()
+  })
+  ```
+</ResponseField>
+
+### File Message
+
+```typescript
+messages.defaults.file
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for file attachments.
+  
+  ```typescript
+  z.object({
+    fileUrl: z.string().min(1),
+    title: z.string().min(1).optional()
+  })
+  ```
+</ResponseField>
+
+### Location Message
+
+```typescript
+messages.defaults.location
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for location/map messages.
+  
+  ```typescript
+  z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+    address: z.string().optional(),
+    title: z.string().optional()
+  })
+  ```
+</ResponseField>
+
+### Card Message
+
+```typescript
+messages.defaults.card
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for rich card messages with actions.
+  
+  ```typescript
+  z.object({
+    title: z.string().min(1),
+    subtitle: z.string().min(1).optional(),
+    imageUrl: z.string().min(1).optional(),
+    actions: z.array(
+      z.object({
+        action: z.enum(['postback', 'url', 'say']),
+        label: z.string().min(1),
+        value: z.string().min(1)
+      })
+    )
+  })
+  ```
+</ResponseField>
+
+**Example:**
+
+```typescript
+// Sending a card message
+await client.createMessage({
+  conversationId,
+  userId: botUserId,
+  type: 'card',
+  payload: {
+    title: 'Product',
+    subtitle: 'Check out this amazing product',
+    imageUrl: 'https://example.com/product.jpg',
+    actions: [
+      { action: 'url', label: 'View', value: 'https://example.com/product' },
+      { action: 'postback', label: 'Buy', value: 'buy_product_123' }
+    ]
+  }
+})
+```
+
+### Carousel Message
+
+```typescript
+messages.defaults.carousel
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for carousel (multiple cards).
+  
+  ```typescript
+  z.object({
+    items: z.array(cardSchema)
+  })
+  ```
+</ResponseField>
+
+### Choice/Dropdown Message
+
+```typescript
+messages.defaults.choice
+messages.defaults.dropdown
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for choice/dropdown messages.
+  
+  ```typescript
+  z.object({
+    text: z.string().min(1),
+    options: z.array(
+      z.object({
+        label: z.string().min(1),
+        value: z.string().min(1)
+      })
+    )
+  })
+  ```
+</ResponseField>
+
+**Example:**
+
+```typescript
+// Sending a choice message
+await client.createMessage({
+  conversationId,
+  userId: botUserId,
+  type: 'choice',
+  payload: {
+    text: 'Choose your preference:',
+    options: [
+      { label: 'Option A', value: 'a' },
+      { label: 'Option B', value: 'b' },
+      { label: 'Option C', value: 'c' }
+    ]
+  }
+})
+```
+
+### Bloc Message
+
+```typescript
+messages.defaults.bloc
+```
+
+<ResponseField name="schema" type="ZodObject">
+  Schema for bloc messages (multiple items in sequence).
+  
+  ```typescript
+  z.object({
+    items: z.array(
+      z.union([
+        z.object({ type: z.literal('text'), payload: textMessageSchema }),
+        z.object({ type: z.literal('image'), payload: imageMessageSchema }),
+        z.object({ type: z.literal('audio'), payload: audioMessageSchema }),
+        z.object({ type: z.literal('video'), payload: videoMessageSchema }),
+        z.object({ type: z.literal('file'), payload: fileMessageSchema }),
+        z.object({ type: z.literal('location'), payload: locationMessageSchema })
+      ])
+    )
+  })
+  ```
+</ResponseField>
+
+**Example:**
+
+```typescript
+// Sending a bloc with multiple items
+await client.createMessage({
+  conversationId,
+  userId: botUserId,
+  type: 'bloc',
+  payload: {
+    items: [
+      { 
+        type: 'text', 
+        payload: { text: 'Check out this image:' } 
+      },
+      { 
+        type: 'image', 
+        payload: { imageUrl: 'https://example.com/image.jpg' } 
+      },
+      { 
+        type: 'text', 
+        payload: { text: 'Pretty cool, right?' } 
+      }
+    ]
+  }
+})
+```
+
+## Deprecated Message Types
+
+### Markdown Message
+
+```typescript
+messages.markdown // Deprecated
+```
+
+<Warning>
+The `markdown` message type is deprecated. Use `text` instead and render markdown on the client side.
+</Warning>
+
+<ResponseField name="schema" type="ZodObject">
+  ```typescript
+  z.object({
+    markdown: z.string().min(1)
+  })
+  ```
+</ResponseField>
+
+### Markdown Bloc
+
+```typescript
+messages.markdownBloc // Deprecated
+```
+
+<Warning>
+The `markdownBloc` message type is deprecated. Use `bloc` instead.
+</Warning>
+
+## Extending Message Schemas
+
+You can extend the default message schemas to add custom fields:
+
+```typescript
+import { IntegrationDefinition, messages, z } from '@botpress/sdk'
+
+const integration = new IntegrationDefinition({
+  name: 'my-integration',
+  version: '1.0.0',
+  channels: {
+    channel: {
+      messages: {
+        // Use default text message
+        text: messages.defaults.text,
+        
+        // Extend image message with custom field
+        image: {
+          schema: messages.defaults.image.schema.extend({
+            altText: z.string().optional()
+          })
+        },
+        
+        // Custom message type
+        customCard: {
+          schema: z.object({
+            title: z.string(),
+            description: z.string(),
+            metadata: z.record(z.string())
+          })
+        }
+      }
+    }
+  }
+})
+```
+
+## Using in Interfaces
+
+Interfaces commonly use message schemas in channel definitions:
+
+```typescript
+import { InterfaceDefinition, messages, z } from '@botpress/sdk'
+
+const hitlInterface = new InterfaceDefinition({
+  name: 'hitl',
+  version: '2.0.0',
+  channels: {
+    hitl: {
+      messages: {
+        // Add userId field to allow sending messages as different users
+        text: {
+          schema: () => messages.defaults.text.schema.extend({
+            userId: z.string().optional()
+              .describe('Send message as a specific user')
+          })
+        },
+        image: {
+          schema: () => messages.defaults.image.schema.extend({
+            userId: z.string().optional()
+          })
+        },
+        // Include other message types
+        audio: messages.defaults.audio,
+        video: messages.defaults.video,
+        file: messages.defaults.file
+      }
+    }
+  }
+})
+```
+
+## Complete Channel Example
+
+```typescript integration.definition.ts
+import { IntegrationDefinition, messages, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'slack',
+  version: '1.0.0',
+  channels: {
+    channel: {
+      title: 'Slack Channel',
+      messages: {
+        // Standard message types
+        text: messages.defaults.text,
+        image: messages.defaults.image,
+        audio: messages.defaults.audio,
+        video: messages.defaults.video,
+        file: messages.defaults.file,
+        
+        // Rich message types
+        card: messages.defaults.card,
+        carousel: messages.defaults.carousel,
+        choice: messages.defaults.choice,
+        
+        // Multi-item message
+        bloc: messages.defaults.bloc,
+        
+        // Extended message with Slack-specific fields
+        slackMessage: {
+          schema: z.object({
+            text: z.string(),
+            threadTs: z.string().optional(),
+            blocks: z.array(z.any()).optional()
+          })
+        }
+      },
+      message: {
+        tags: {
+          id: { title: 'Slack Message ID' },
+          ts: { title: 'Slack Timestamp' }
+        }
+      },
+      conversation: {
+        tags: {
+          channel: { title: 'Slack Channel ID' },
+          workspace: { title: 'Workspace ID' }
+        }
+      }
+    }
+  }
+})
+```
+
+## Type Safety
+
+The message schemas provide full TypeScript type safety when using the client:
+
+```typescript
+import { Client } from '.botpress'
+
+const client = new Client({ token: ctx.configuration.token })
+
+// TypeScript knows the payload structure
+await client.createMessage({
+  conversationId,
+  userId: botUserId,
+  type: 'text',
+  payload: {
+    text: 'Hello!' // ✓ Correct
+    // imageUrl: 'test' // ✗ Type error
+  }
+})
+
+await client.createMessage({
+  conversationId,
+  userId: botUserId,
+  type: 'card',
+  payload: {
+    title: 'Product',
+    actions: [
+      { 
+        action: 'url', // ✓ Valid action type
+        label: 'Click',
+        value: 'https://example.com'
+      }
+    ]
+  }
+})
+```
+
+## See Also
+
+- [ZUI](/sdk/zui) - Schema system used for message definitions
+- [IntegrationDefinition](/sdk/integration/definition) - Define channels with messages
+- [InterfaceDefinition](/sdk/interface/definition) - Use messages in interface definitions
+- [ChannelDefinition](/sdk/integration/definition#channeldefinition) - Channel configuration reference

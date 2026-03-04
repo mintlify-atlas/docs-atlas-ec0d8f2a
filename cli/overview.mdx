@@ -110,3 +110,39 @@ bp dev  # Start development server
 # Make changes to code
 # Server auto-reloads
 ```
+
+## Global options
+
+The following options are available for all CLI commands:
+
+### Authentication options
+
+<ParamField path="--token" type="string">
+  Personal Access Token for authentication. Can also be set via `BP_TOKEN` environment variable.
+</ParamField>
+
+<ParamField path="--workspaceId" type="string">
+  Workspace ID to use for the command. Can also be set via `BP_WORKSPACE_ID` environment variable.
+</ParamField>
+
+<ParamField path="--apiUrl" type="string">
+  API URL for Botpress Cloud. Defaults to `https://api.botpress.cloud`.
+</ParamField>
+
+### Output options
+
+<ParamField path="--verbose" type="boolean">
+  Enable verbose logging for debugging.
+</ParamField>
+
+<ParamField path="--json" type="boolean">
+  Output results in JSON format (where applicable).
+</ParamField>
+
+<ParamField path="--yes" type="boolean">
+  Skip confirmation prompts and accept defaults.
+</ParamField>
+
+<Note>
+Environment variables can be used as an alternative to command-line flags. This is especially useful for CI/CD environments.
+</Note>
