@@ -1,0 +1,420 @@
+---
+title: Bot handlers
+description: Implement handlers for messages, events, actions, and lifecycle hooks
+---
+
+Bot handlers define how your bot responds to messages, events, state changes, and actions. This guide covers all handler types.
+
+## Bot implementation
+
+Create a bot implementation with handlers:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({
+  register: async ({ logger }) => {
+    logger.info('Bot registered successfully!')
+  },
+  actions: {
+    sayHello: async ({ input }) => {
+      const name = input?.name || 'World'
+      return { message: `Hello, ${name}!` }
+    },
+  },
+})
+
+export default bot
+```
+
+### Type signature
+
+```typescript
+class BotImplementation<TBot extends BaseBot, TPlugins extends Record<string, BasePlugin>> {
+  constructor(props: BotImplementationProps<TBot, TPlugins>)
+  
+  on: {
+    message<T extends string>(type: T, handler: MessageHandlers<TBot>[T]): void
+    event<T extends string>(type: T, handler: EventHandlers<TBot>[T]): void
+    stateExpired<T extends string>(type: T, handler: StateExpiredHandlers<TBot>[T]): void
+    beforeIncomingEvent<T extends string>(type: T, handler: HookHandlers<TBot>['before_incoming_event'][T]): void
+    beforeIncomingMessage<T extends string>(type: T, handler: HookHandlers<TBot>['before_incoming_message'][T]): void
+    beforeOutgoingMessage<T extends string>(type: T, handler: HookHandlers<TBot>['before_outgoing_message'][T]): void
+    afterIncomingEvent<T extends string>(type: T, handler: HookHandlers<TBot>['after_incoming_event'][T]): void
+    afterIncomingMessage<T extends string>(type: T, handler: HookHandlers<TBot>['after_incoming_message'][T]): void
+    afterOutgoingMessage<T extends string>(type: T, handler: HookHandlers<TBot>['after_outgoing_message'][T]): void
+  }
+}
+```
+
+## Message handlers
+
+Handle incoming messages from users:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+// Handle all messages
+bot.on.message('*', async ({ message, client, ctx }) => {
+  console.log('Received message:', message.payload)
+  
+  await client.createMessage({
+    conversationId: message.conversationId,
+    userId: ctx.botId,
+    tags: {},
+    type: 'text',
+    payload: {
+      text: 'Message received!',
+    },
+  })
+})
+
+// Handle specific message type
+bot.on.message('text', async ({ message, user, conversation }) => {
+  const text = message.payload.text
+  console.log(`User ${user.id} said: ${text}`)
+  console.log(`Conversation ${conversation.id}`)
+})
+
+export default bot
+```
+
+### Handler props
+
+```typescript
+type MessagePayload = {
+  ctx: BotContext
+  logger: BotLogger
+  client: BotClient<TBot>
+  workflows: WorkflowProxy<TBot> // EXPERIMENTAL
+  message: Message & { type: string; payload: any }
+  user: User
+  conversation: Conversation
+  event: Event
+}
+```
+
+## Event handlers
+
+Handle events from integrations or custom events:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+// Handle integration events
+bot.on.event('github:issueOpened', async ({ event, client }) => {
+  const { issueNumber, title, url } = event.payload
+  console.log(`New issue #${issueNumber}: ${title}`)
+  console.log(`URL: ${url}`)
+})
+
+// Handle custom events
+bot.on.event('orderCompleted', async ({ event, logger }) => {
+  const { orderId, amount } = event.payload
+  logger.info(`Order ${orderId} completed: $${amount}`)
+})
+
+// Handle webhook events
+bot.on.event('webhook:event', async ({ event }) => {
+  const { body, method, path, query } = event.payload
+  console.log(`${method} ${path}`, body)
+})
+
+export default bot
+```
+
+### Handler props
+
+```typescript
+type EventPayload = {
+  ctx: BotContext
+  logger: BotLogger
+  client: BotClient<TBot>
+  workflows: WorkflowProxy<TBot> // EXPERIMENTAL
+  event: Event & { type: string; payload: any }
+}
+```
+
+## Action handlers
+
+Implement custom bot actions:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({
+  actions: {
+    // Simple action
+    sayHello: async ({ input }) => {
+      const name = input?.name || 'World'
+      return { message: `Hello, ${name}!` }
+    },
+    
+    // Action with client access
+    sendNotification: async ({ input, client, ctx }) => {
+      const { conversationId, message } = input
+      
+      await client.createMessage({
+        conversationId,
+        userId: ctx.botId,
+        tags: {},
+        type: 'text',
+        payload: { text: message },
+      })
+      
+      return { sent: true }
+    },
+    
+    // Action with state management
+    updatePreferences: async ({ input, client }) => {
+      const { userId, language, timezone } = input
+      
+      const { state } = await client.getOrSetState({
+        type: 'user',
+        id: userId,
+        name: 'userPreferences',
+        payload: { language: 'en', timezone: 'UTC' },
+      })
+      
+      await client.setState({
+        type: 'user',
+        id: userId,
+        name: 'userPreferences',
+        payload: { ...state.payload, language, timezone },
+      })
+      
+      return { updated: true }
+    },
+  },
+})
+
+export default bot
+```
+
+### Handler props
+
+```typescript
+type ActionHandlerPayload = {
+  ctx: BotContext
+  logger: BotLogger
+  client: BotClient<TBot>
+  workflows: WorkflowProxy<TBot> // EXPERIMENTAL
+  type?: string
+  input: any // Typed based on action definition
+}
+```
+
+## State expired handlers
+
+Handle state expiration:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+bot.on.stateExpired('conversationContext', async ({ state, client }) => {
+  console.log('Conversation context expired:', state.payload)
+  
+  // Clean up or send reminder
+  // ...
+})
+
+export default bot
+```
+
+## Lifecycle hooks
+
+Intercept and modify data at various lifecycle stages:
+
+### Before hooks
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+// Intercept incoming messages
+bot.on.beforeIncomingMessage('*', async ({ data }) => {
+  console.log('Before message processing:', data.payload)
+  
+  // Modify message
+  return {
+    data: {
+      ...data,
+      payload: {
+        ...data.payload,
+        text: data.payload.text?.toLowerCase(),
+      },
+    },
+  }
+})
+
+// Stop message processing
+bot.on.beforeIncomingMessage('text', async ({ data }) => {
+  if (data.payload.text?.includes('spam')) {
+    return { stop: true } // Don't process spam
+  }
+})
+
+// Intercept incoming events
+bot.on.beforeIncomingEvent('*', async ({ data }) => {
+  console.log('Before event processing:', data.type)
+  return { data }
+})
+
+export default bot
+```
+
+### After hooks
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+// Log after message sent
+bot.on.afterOutgoingMessage('*', async ({ data }) => {
+  console.log('Message sent:', data.message.id)
+})
+
+// Track analytics
+bot.on.afterIncomingMessage('*', async ({ data }) => {
+  // Send to analytics service
+  console.log('Analytics:', {
+    userId: data.userId,
+    messageType: data.type,
+    timestamp: new Date().toISOString(),
+  })
+})
+
+export default bot
+```
+
+### Hook types
+
+```typescript
+type HookDefinitions = {
+  before_incoming_event: { stoppable: true; data: IncomingEvents }
+  before_incoming_message: { stoppable: true; data: IncomingMessages }
+  before_outgoing_message: { stoppable: false; data: OutgoingMessageRequests }
+  before_outgoing_call_action: { stoppable: false; data: OutgoingCallActionRequests }
+  before_incoming_call_action: { stoppable: false; data: IncomingCallActionRequest }
+  after_incoming_event: { stoppable: true; data: IncomingEvents }
+  after_incoming_message: { stoppable: true; data: IncomingMessages }
+  after_outgoing_message: { stoppable: false; data: OutgoingMessageResponses }
+  after_outgoing_call_action: { stoppable: false; data: OutgoingCallActionResponses }
+  after_incoming_call_action: { stoppable: false; data: IncomingCallActionResponses }
+}
+```
+
+## Workflow handlers (Experimental)
+
+Handle workflow lifecycle events:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+bot.on.workflowStart('lintAll', async ({ workflow, event, client }) => {
+  console.log('Workflow started:', workflow.id)
+})
+
+bot.on.workflowContinue('lintAll', async ({ workflow, event, client }) => {
+  console.log('Workflow continued:', workflow.id)
+})
+
+bot.on.workflowTimeout('lintAll', async ({ workflow, event, client }) => {
+  console.log('Workflow timed out:', workflow.id)
+})
+
+export default bot
+```
+
+<Warning>
+Workflow handlers are experimental and may change in future versions.
+</Warning>
+
+## Register handler
+
+Run code when your bot is registered:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({
+  register: async ({ ctx, logger, client }) => {
+    logger.info('Bot registered!')
+    logger.info('Bot ID:', ctx.botId)
+    
+    // Initialize resources
+    // Set up webhooks
+    // Configure external services
+  },
+  actions: {},
+})
+
+export default bot
+```
+
+## Call action handlers
+
+Call action handlers from within your bot:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({
+  actions: {
+    processOrder: async ({ input }) => {
+      return { orderId: '12345', status: 'processed' }
+    },
+  },
+})
+
+bot.on.message('text', async (props) => {
+  // Call action handler
+  const result = await bot.actionHandlers.processOrder({
+    ...props,
+    input: { items: ['item1', 'item2'] },
+  })
+  
+  console.log('Order result:', result)
+})
+
+export default bot
+```
+
+## Handler execution order
+
+Handlers are executed in the order they are registered:
+
+```typescript
+bot.on.message('*', async () => {
+  console.log('Handler 1') // Runs first
+})
+
+bot.on.message('*', async () => {
+  console.log('Handler 2') // Runs second
+})
+
+bot.on.message('text', async () => {
+  console.log('Handler 3') // Runs third (specific before global)
+})
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Conversations" icon="comments" href="/bots/conversations">
+    Manage conversations and users
+  </Card>
+  <Card title="Messages" icon="message" href="/bots/messages">
+    Send and receive messages
+  </Card>
+</CardGroup>

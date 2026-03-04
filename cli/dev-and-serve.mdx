@@ -1,0 +1,112 @@
+---
+title: bp dev and bp serve
+description: Run your project in development mode
+---
+
+Development commands for local testing and iteration.
+
+## bp dev
+
+Run project in development mode with hot reload:
+
+```bash
+bp dev
+```
+
+This command:
+1. Builds your project
+2. Starts local server
+3. Creates tunnel for webhooks
+4. Deploys to cloud in dev mode
+5. Watches for file changes
+6. Auto-reloads on changes
+
+## Options
+
+### --port
+
+Specify server port:
+
+```bash
+bp dev --port 3000
+```
+
+Defaults:
+- Bots: 8075
+- Integrations: 8076
+
+### --tunnelUrl
+
+Custom tunnel URL:
+
+```bash
+bp dev --tunnelUrl https://tunnel.example.com
+```
+
+### --tunnelId
+
+Specific tunnel ID:
+
+```bash
+bp dev --tunnelId my-tunnel-id
+```
+
+### --noBuild
+
+Skip initial build:
+
+```bash
+bp dev --noBuild
+```
+
+### --noSecretCaching
+
+Disable secret caching:
+
+```bash
+bp dev --noSecretCaching
+```
+
+## bp serve
+
+Serve project locally without cloud deployment:
+
+```bash
+bp serve
+```
+
+Options:
+
+```bash
+bp serve --port 3000
+```
+
+## Development workflow
+
+<Steps>
+  <Step title="Start dev server">
+    ```bash
+    bp dev
+    ```
+  </Step>
+  <Step title="Make changes">
+    Edit your source files
+  </Step>
+  <Step title="Auto-reload">
+    Server detects changes and reloads
+  </Step>
+  <Step title="Test">
+    Test changes immediately
+  </Step>
+</Steps>
+
+## Environment variables
+
+Dev mode sets:
+
+```bash
+BP_API_URL=<cloud-api-url>
+BP_TOKEN=<your-token>
+```
+
+Integrations also get secret variables.

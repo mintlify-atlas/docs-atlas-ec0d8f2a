@@ -1,0 +1,64 @@
+---
+title: bp build and bp bundle
+description: Build and bundle your Botpress project
+---
+
+Build and bundle commands compile your TypeScript code and generate type definitions.
+
+## bp build
+
+Generate types and bundle code:
+
+```bash
+bp build
+```
+
+This command:
+1. Runs `bp generate` to create type definitions
+2. Runs `bp bundle` to compile code
+
+## bp bundle
+
+Bundle code without generating types:
+
+```bash
+bp bundle
+```
+
+Creates:
+- CommonJS bundle: `.botpress/dist/index.cjs`
+- ESM bundle: `.botpress/dist/index.mjs`
+
+## Options
+
+### --workDir
+
+Specify working directory:
+
+```bash
+bp build --workDir ./my-project
+```
+
+## Build output
+
+Build creates:
+
+```
+.botpress/
+├── dist/
+│   ├── index.cjs    # CommonJS bundle
+│   └── index.mjs    # ESM bundle
+└── types/           # Generated types
+```
+
+## bp generate
+
+Generate only type definitions:
+
+```bash
+bp generate
+```
+
+Alias: `bp gen`
+
+Generates TypeScript types in `.botpress/` directory.

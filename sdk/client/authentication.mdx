@@ -1,0 +1,358 @@
+---
+title: API Authentication
+description: Authenticate with the Botpress API using tokens
+---
+
+The Botpress API uses token-based authentication. Different token types provide different levels of access.
+
+## Token Types
+
+### Personal Access Token (PAT)
+
+Full workspace access for administrative operations.
+
+**Use cases:**
+- Managing bots and integrations
+- Workspace administration
+- CI/CD pipelines
+- Development tools
+
+**Format:** `bp_pat_...`
+
+**Creating a PAT:**
+
+1. Go to your Botpress Dashboard
+2. Navigate to Settings > Personal Access Tokens
+3. Click "Create Token"
+4. Set permissions and expiration
+5. Copy the token (shown only once)
+
+```typescript
+import { Client } from '@botpress/client/admin'
+
+const client = new Client({
+  token: 'bp_pat_your_personal_access_token'
+})
+
+// Create a bot
+const { bot } = await client.createBot({
+  workspaceId: 'workspace-id',
+  name: 'my-bot'
+})
+```
+
+### Bot Token
+
+Bot-scoped access for runtime operations.
+
+**Use cases:**
+- Bot runtime operations
+- Sending/receiving messages
+- Managing conversations and users
+- Calling actions
+
+**Format:** `bp_bot_...`
+
+**Getting a bot token:**
+
+Bot tokens are automatically provided in bot handlers via the `client` prop. For standalone use:
+
+```typescript
+import { Client } from '@botpress/client'
+
+// Token from environment or configuration
+const client = new Client({
+  token: process.env.BOTPRESS_BOT_TOKEN
+})
+
+const { conversation } = await client.createConversation({
+  integrationId: 'integration-id'
+})
+```
+
+### Integration Token
+
+Integration-scoped access.
+
+**Use cases:**
+- Integration runtime operations
+- Webhook handling
+- Creating messages from external platforms
+
+**Format:** `bp_int_...`
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  token: process.env.INTEGRATION_TOKEN
+})
+```
+
+## Using Tokens
+
+### Environment Variables
+
+Store tokens securely in environment variables:
+
+```bash .env
+# Personal Access Token (admin operations)
+BOTPRESS_PAT=bp_pat_xxxxxxxxxxxxxxxx
+
+# Bot Token (runtime operations)
+BOTPRESS_BOT_TOKEN=bp_bot_xxxxxxxxxxxxxxxx
+
+# Integration Token
+BOTPRESS_INTEGRATION_TOKEN=bp_int_xxxxxxxxxxxxxxxx
+```
+
+```typescript
+import { config } from 'dotenv'
+import { Client } from '@botpress/client'
+
+config()
+
+const client = new Client({
+  token: process.env.BOTPRESS_BOT_TOKEN!
+})
+```
+
+### In Bot Handlers
+
+Tokens are automatically available in handlers:
+
+```typescript
+import { Bot } from '@botpress/sdk'
+
+export default new Bot({
+  definition,
+  actions: {
+    myAction: async ({ client }) => {
+      // client is already authenticated with bot token
+      const { user } = await client.createUser({
+        tags: {}
+      })
+      
+      return { userId: user.id }
+    }
+  }
+})
+```
+
+### In Integration Handlers
+
+```typescript
+import { Integration } from '@botpress/sdk'
+
+export default new Integration({
+  definition,
+  handler: async ({ client, req }) => {
+    // client is already authenticated with integration token
+    const { message } = await client.createMessage({
+      conversationId: 'conv-id',
+      userId: 'user-id',
+      type: 'text',
+      payload: { text: 'Hello' }
+    })
+    
+    return { status: 200 }
+  }
+})
+```
+
+## Token Scopes
+
+Different tokens have different permissions:
+
+### Personal Access Token
+
+<ResponseField name="Workspace Management" type="allowed">
+  Create, update, delete workspaces
+</ResponseField>
+
+<ResponseField name="Bot Management" type="allowed">
+  Create, update, delete bots
+</ResponseField>
+
+<ResponseField name="Integration Management" type="allowed">
+  Create, update, delete integrations
+</ResponseField>
+
+<ResponseField name="User Management" type="allowed">
+  Manage workspace users and permissions
+</ResponseField>
+
+<ResponseField name="Billing" type="allowed">
+  View and manage billing
+</ResponseField>
+
+### Bot Token
+
+<ResponseField name="Conversations" type="allowed">
+  Create, read, update, delete conversations
+</ResponseField>
+
+<ResponseField name="Messages" type="allowed">
+  Send and receive messages
+</ResponseField>
+
+<ResponseField name="Users" type="allowed">
+  Create and manage users within the bot
+</ResponseField>
+
+<ResponseField name="State" type="allowed">
+  Read and write bot, user, and conversation state
+</ResponseField>
+
+<ResponseField name="Actions" type="allowed">
+  Call integration actions
+</ResponseField>
+
+<ResponseField name="Tables" type="allowed">
+  Read and write table data
+</ResponseField>
+
+<ResponseField name="Files" type="allowed">
+  Upload and manage files
+</ResponseField>
+
+<ResponseField name="Bot Management" type="denied">
+  Cannot modify bot configuration
+</ResponseField>
+
+### Integration Token
+
+<ResponseField name="Conversations" type="allowed">
+  Create conversations for the integration
+</ResponseField>
+
+<ResponseField name="Messages" type="allowed">
+  Send messages to bots
+</ResponseField>
+
+<ResponseField name="Users" type="allowed">
+  Create users
+</ResponseField>
+
+<ResponseField name="Events" type="allowed">
+  Create events
+</ResponseField>
+
+<ResponseField name="State" type="allowed">
+  Read/write integration, conversation, and user state
+</ResponseField>
+
+## Security Best Practices
+
+### 1. Never Commit Tokens
+
+Add `.env` to `.gitignore`:
+
+```bash .gitignore
+.env
+.env.local
+*.env
+```
+
+### 2. Use Environment Variables
+
+```typescript
+// Good
+const token = process.env.BOTPRESS_TOKEN
+
+// Bad
+const token = 'bp_pat_xxxxxxxxxxxxxxxx'
+```
+
+### 3. Rotate Tokens Regularly
+
+Create new tokens periodically and revoke old ones.
+
+### 4. Use Minimal Scopes
+
+Use bot tokens for runtime operations instead of PATs when possible.
+
+### 5. Secure Token Storage
+
+In production:
+
+- Use secret management services (AWS Secrets Manager, Azure Key Vault, etc.)
+- Encrypt tokens at rest
+- Use ephemeral tokens when possible
+
+```typescript
+// AWS Secrets Manager example
+import { SecretsManager } from '@aws-sdk/client-secrets-manager'
+
+const secretsManager = new SecretsManager()
+
+const { SecretString } = await secretsManager.getSecretValue({
+  SecretId: 'botpress/bot-token'
+})
+
+const client = new Client({
+  token: SecretString
+})
+```
+
+### 6. Monitor Token Usage
+
+Track API calls to detect unusual activity:
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  token: process.env.BOTPRESS_TOKEN
+})
+
+// Log all API calls
+client.interceptors.request.use((config) => {
+  console.log('API Call:', config.method, config.url)
+  return config
+})
+```
+
+## Token Revocation
+
+Revoke compromised tokens immediately:
+
+1. Go to Botpress Dashboard
+2. Navigate to Settings > Personal Access Tokens
+3. Find the token
+4. Click "Revoke"
+
+After revocation, the token becomes invalid immediately.
+
+## Troubleshooting
+
+### 401 Unauthorized
+
+```typescript
+try {
+  await client.getUser({ id: 'user-id' })
+} catch (error) {
+  if (isApiError(error) && error.status === 401) {
+    console.error('Invalid or expired token')
+    // Check token and refresh if needed
+  }
+}
+```
+
+### 403 Forbidden
+
+```typescript
+try {
+  await client.createBot({ /* ... */ })
+} catch (error) {
+  if (isApiError(error) && error.status === 403) {
+    console.error('Insufficient permissions')
+    // Use a token with appropriate scopes
+  }
+}
+```
+
+## See Also
+
+- [Client Overview](/sdk/client/overview) - Client initialization
+- [Client Methods](/sdk/client/methods) - API operations reference

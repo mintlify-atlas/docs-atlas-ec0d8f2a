@@ -1,0 +1,85 @@
+---
+title: Profile management
+description: Manage CLI profiles for different workspaces
+---
+
+Use profiles to switch between different Botpress workspaces and environments.
+
+## List profiles
+
+List all available profiles:
+
+```bash
+bp profiles list
+```
+
+Alias: `bp profiles ls`
+
+## Active profile
+
+Show current active profile:
+
+```bash
+bp profiles active
+```
+
+Displays:
+- Workspace ID
+- Workspace handle
+- API URL
+- Token status
+
+## Use profile
+
+Switch to a different profile:
+
+```bash
+bp profiles use <profile-name>
+```
+
+## Profile configuration
+
+Profiles are stored in:
+
+```
+~/.botpress/
+├── config.json
+└── profiles/
+    ├── default.json
+    └── production.json
+```
+
+## Examples
+
+### Switch to production
+
+```bash
+bp profiles use production
+```
+
+### View active profile
+
+```bash
+bp profiles active
+```
+
+Output:
+```
+Workspace: acme (abc123)
+API URL: https://api.botpress.cloud
+Authenticated: Yes
+```
+
+## Multiple workspaces
+
+Use profiles to work with multiple workspaces:
+
+```bash
+# Development workspace
+bp profiles use dev
+bp deploy
+
+# Production workspace
+bp profiles use prod
+bp deploy
+```

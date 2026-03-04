@@ -1,0 +1,341 @@
+---
+title: Communication Platforms
+description: Connect your Botpress bot to popular messaging platforms and communication channels
+---
+
+Reach your users on their preferred messaging platforms with Botpress communication integrations. Support for WhatsApp, Slack, Teams, Telegram, and more.
+
+## Available Communication Integrations
+
+<CardGroup cols={2}>
+  <Card title="WhatsApp" icon="whatsapp">
+    Connect to the world's most popular messaging app with 2+ billion users
+  </Card>
+  
+  <Card title="Slack" icon="slack">
+    Automate interactions and engage with your team on Slack
+  </Card>
+  
+  <Card title="Microsoft Teams" icon="microsoft">
+    Deploy bots in enterprise environments with Teams integration
+  </Card>
+  
+  <Card title="Telegram" icon="telegram">
+    Build fast, secure bots on Telegram's platform
+  </Card>
+  
+  <Card title="Messenger" icon="facebook">
+    Reach users on Facebook Messenger and manage page content
+  </Card>
+  
+  <Card title="Instagram" icon="instagram">
+    Automate DMs and manage comments on Instagram
+  </Card>
+  
+  <Card title="Twilio" icon="phone">
+    Send SMS, voice calls, and multi-channel messages
+  </Card>
+  
+  <Card title="Gmail" icon="envelope">
+    Send and receive emails directly from your bot
+  </Card>
+</CardGroup>
+
+## WhatsApp
+
+**Installation:**
+```bash
+bp add whatsapp
+```
+
+**Description:**
+Send and receive messages through WhatsApp.
+
+**Key Features:**
+- **Message Templates:** Send pre-approved templates for notifications
+- **Rich Media:** Support for images, videos, audio, files, and locations
+- **Interactive Messages:** Buttons, lists, and quick replies
+- **Message Reactions:** React to messages with emojis
+- **Read Receipts:** Track when messages are read
+- **Proactive Messaging:** Start conversations with template messages
+
+**Channels:**
+- WhatsApp conversation channel with support for text, images, videos, audio, files, locations, buttons, and dropdowns
+
+**Events:**
+- Message Read
+- Reaction Added/Removed
+- Template Updates (components, quality, status, category)
+
+**Actions:**
+- Start Conversation (with message template)
+- Send Template Message
+
+**Configuration:**
+Supports manual configuration with Meta app credentials or sandbox for testing.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/whatsapp)
+
+---
+
+## Slack
+
+**Installation:**
+```bash
+bp add slack
+```
+
+**Description:**
+Automate interactions with your team.
+
+**Key Features:**
+- **Direct Messages:** Send and receive DMs
+- **Channel Integration:** Post to channels and respond to mentions
+- **Rich Formatting:** Use Slack's Block Kit for rich messages
+- **Reactions:** React to messages with emojis
+- **File Sharing:** Upload and share files
+- **Typing Indicators:** Show when bot is typing
+
+**Channels:**
+- Slack conversation channel
+
+**Use Cases:**
+- Internal team automation
+- IT helpdesk bots
+- HR assistance
+- Onboarding workflows
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/slack)
+
+---
+
+## Microsoft Teams
+
+**Installation:**
+```bash
+bp add teams
+```
+
+**Description:**
+Interact with users, deliver notifications, and perform actions within Microsoft Teams.
+
+**Key Features:**
+- **Enterprise Ready:** Deploy in Microsoft 365 environments
+- **Proactive Messaging:** Send notifications to users and channels
+- **Rich Cards:** Adaptive cards for interactive experiences
+- **Authentication:** SSO and Azure AD integration
+- **Typing Indicators:** Show bot activity status
+
+**Configuration:**
+Requires Microsoft Teams App ID, password, and tenant ID.
+
+**Use Cases:**
+- Employee support bots
+- Meeting schedulers
+- Approval workflows
+- IT service management
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/teams)
+
+---
+
+## Telegram
+
+**Installation:**
+```bash
+bp add telegram
+```
+
+**Description:**
+Engage with your audience in real-time.
+
+**Key Features:**
+- **Fast Messaging:** Real-time message delivery
+- **Rich Media:** Send photos, videos, documents, and locations
+- **Inline Keyboards:** Interactive button menus
+- **Bot Commands:** Support for slash commands
+- **Group Chats:** Bot can participate in group conversations
+
+**Configuration:**
+Requires Telegram Bot Token from @BotFather.
+
+**Use Cases:**
+- Community management
+- News and updates distribution
+- Customer support
+- Gaming and entertainment bots
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/telegram)
+
+---
+
+## Messenger and Facebook
+
+**Installation:**
+```bash
+bp add messenger
+```
+
+**Description:**
+Give your bot access to one of the world's largest messaging platforms and manage your Facebook page content in one place.
+
+**Key Features:**
+- **Messenger Conversations:** Send and receive messages
+- **Facebook Comments:** Reply to comments on posts (1 reply per top-level comment)
+- **Rich Media:** Images, videos, files, and audio
+- **Quick Replies:** Interactive button options
+- **Persistent Menu:** Custom bot menu
+- **Proactive Messaging:** Start conversations and send notifications
+
+**Channels:**
+- Messenger conversation channel
+- Comment replies channel
+
+**Configuration:**
+Supports manual configuration or sandbox mode for testing.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/messenger)
+
+---
+
+## Instagram
+
+**Installation:**
+```bash
+bp add instagram
+```
+
+**Description:**
+Automate interactions, manage comments, and send/receive messages all in real-time.
+
+**Key Features:**
+- **Direct Messages:** Respond to DMs automatically
+- **Comment Management:** Monitor and respond to comments
+- **Story Replies:** Engage with story interactions
+- **Rich Media:** Send images and videos
+
+**Use Cases:**
+- Social media customer service
+- Influencer engagement automation
+- Brand interaction management
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/instagram)
+
+---
+
+## Twilio
+
+**Installation:**
+```bash
+bp add twilio
+```
+
+**Description:**
+Send and receive messages, voice calls, emails, SMS, and more.
+
+**Key Features:**
+- **SMS Messaging:** Send and receive text messages
+- **Voice Calls:** Make and receive phone calls
+- **Multi-Channel:** Support for SMS, WhatsApp, email, and more
+- **Global Reach:** International messaging capabilities
+
+**Use Cases:**
+- SMS notifications and alerts
+- Two-factor authentication
+- Appointment reminders
+- Customer support via SMS
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/twilio)
+
+---
+
+## Gmail
+
+**Installation:**
+```bash
+bp add gmail
+```
+
+**Description:**
+Send, receive, and manage emails directly within your bot's workflow.
+
+**Key Features:**
+- **Send Emails:** Compose and send emails
+- **Receive Emails:** Process incoming messages
+- **Email Management:** Read, search, and organize emails
+- **Attachments:** Handle file attachments
+
+**Use Cases:**
+- Email automation
+- Support ticket creation
+- Newsletter management
+- Lead nurturing
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/gmail)
+
+---
+
+## Other Communication Integrations
+
+### Line
+**Installation:** `bp add line`
+
+Interact with customers using a rich set of features on the Line messaging platform (popular in Asia).
+
+### Viber
+**Installation:** `bp add viber`
+
+Send and receive SMS messages through Viber.
+
+### Vonage
+**Installation:** `bp add vonage`
+
+Send and receive SMS messages using the Vonage (formerly Nexmo) platform.
+
+### Sunshine Conversations
+**Installation:** `bp add sunco`
+
+Give your bot access to a powerful omnichannel messaging platform.
+
+### Freshchat
+**Installation:** `bp add freshchat`
+
+Use Freshchat as a Human-in-the-Loop (HITL) provider for live agent handoff.
+
+### Chat
+**Installation:** `bp add chat`
+
+Chat integration for Botpress; allows interacting with your bot using HTTP requests.
+
+---
+
+## Multi-Channel Strategy
+
+Many businesses deploy bots across multiple channels:
+
+1. **Install multiple integrations:**
+```bash
+bp add whatsapp slack teams
+```
+
+2. **Configure each integration** with appropriate credentials
+
+3. **Build once, deploy everywhere:** Your bot logic works across all channels
+
+4. **Channel-specific features:** Use channel capabilities when needed
+
+## Best Practices
+
+- **Choose channels** based on where your users are
+- **Test in sandbox** environments before going live
+- **Monitor message limits** and rate limits for each platform
+- **Use rich media** appropriately for each channel's capabilities
+- **Implement fallbacks** for unsupported message types

@@ -1,0 +1,445 @@
+---
+title: Creating integrations
+description: Build custom integrations to connect Botpress with external platforms
+---
+
+This guide walks you through creating a custom integration from scratch.
+
+## Initialize integration
+
+Create a new integration project:
+
+```bash
+bp init --type integration
+```
+
+You'll be prompted for:
+- Integration name (format: `workspace-handle/integration-name`)
+- Workspace handle
+- Template (if multiple available)
+
+<Info>
+Integration names must include your workspace handle, for example: `acme/slack` or `mycompany/custom-api`.
+</Info>
+
+## Project structure
+
+A typical integration project:
+
+```
+my-integration/
+├── src/
+│   ├── index.ts               # Main implementation
+│   ├── setup/
+│   │   ├── register.ts        # Registration handler
+│   │   └── unregister.ts      # Cleanup handler
+│   ├── actions/
+│   │   ├── index.ts           # Action exports
+│   │   └── send-message.ts    # Action implementation
+│   ├── channels.ts            # Channel handlers
+│   └── client.ts              # API client
+├── integration.definition.ts  # Integration definition
+├── icon.svg                   # Integration icon
+├── hub.md                     # Documentation
+├── package.json
+└── tsconfig.json
+```
+
+## Define integration
+
+Create the integration definition:
+
+```typescript integration.definition.ts
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'acme/my-integration',
+  version: '1.0.0',
+  title: 'My Integration',
+  description: 'Custom integration for my service',
+  icon: 'icon.svg',
+  readme: 'hub.md',
+  
+  configuration: {
+    schema: z.object({
+      apiKey: z.string().min(1).describe('API Key'),
+      apiUrl: z.string().url().optional().describe('API Base URL'),
+    }),
+  },
+  
+  channels: {
+    channel: {
+      title: 'Main Channel',
+      description: 'Primary communication channel',
+      messages: {
+        text: {
+          schema: z.object({
+            text: z.string().min(1),
+          }),
+        },
+      },
+      message: {
+        tags: {
+          id: { title: 'Message ID', description: 'External message ID' },
+        },
+      },
+      conversation: {
+        tags: {
+          channel: { title: 'Channel', description: 'Channel identifier' },
+        },
+      },
+    },
+  },
+  
+  actions: {
+    sendNotification: {
+      title: 'Send Notification',
+      description: 'Send a notification to external service',
+      input: {
+        schema: z.object({
+          userId: z.string(),
+          message: z.string(),
+        }),
+      },
+      output: {
+        schema: z.object({
+          success: z.boolean(),
+          messageId: z.string().optional(),
+        }),
+      },
+    },
+  },
+  
+  events: {
+    notificationReceived: {
+      title: 'Notification Received',
+      description: 'Triggered when a notification is received',
+      schema: z.object({
+        userId: z.string(),
+        message: z.string(),
+        timestamp: z.string(),
+      }),
+    },
+  },
+  
+  user: {
+    tags: {
+      id: { title: 'User ID', description: 'External user ID' },
+    },
+  },
+})
+```
+
+## Implement integration
+
+Create the integration implementation:
+
+```typescript src/index.ts
+import { register, unregister } from './setup'
+import * as actions from './actions'
+import * as channels from './channels'
+import * as bp from '.botpress'
+
+const integration = new bp.Integration({
+  register,
+  unregister,
+  handler: async ({ req, client, ctx }) => {
+    // Handle incoming webhooks
+    console.log('Webhook received:', req.body)
+    
+    // Parse and emit events
+    const event = req.body
+    
+    await client.createEvent({
+      type: 'notificationReceived',
+      payload: {
+        userId: event.userId,
+        message: event.message,
+        timestamp: new Date().toISOString(),
+      },
+    })
+    
+    return { status: 200 }
+  },
+  actions,
+  channels,
+})
+
+export default integration
+```
+
+## Registration handler
+
+Set up webhooks and initialize resources:
+
+```typescript src/setup/register.ts
+import type { RegisterHandler } from '.botpress/implementation'
+
+export const register: RegisterHandler = async ({ ctx, client, logger }) => {
+  logger.info('Registering integration')
+  
+  const config = JSON.parse(ctx.configuration.payload)
+  const webhookUrl = ctx.webhookUrl
+  
+  // Register webhook with external service
+  const response = await fetch(`${config.apiUrl}/webhooks`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url: webhookUrl,
+      events: ['notification.received'],
+    }),
+  })
+  
+  const data = await response.json()
+  
+  // Store webhook ID in state
+  await client.setState({
+    type: 'integration',
+    name: 'webhook',
+    id: ctx.integrationId,
+    payload: {
+      webhookId: data.id,
+      url: webhookUrl,
+    },
+  })
+  
+  logger.info('Integration registered successfully')
+}
+```
+
+## Unregistration handler
+
+Clean up webhooks and resources:
+
+```typescript src/setup/unregister.ts
+import type { UnregisterHandler } from '.botpress/implementation'
+
+export const unregister: UnregisterHandler = async ({ ctx, client, logger }) => {
+  logger.info('Unregistering integration')
+  
+  const config = JSON.parse(ctx.configuration.payload)
+  
+  // Get webhook state
+  const { state } = await client.getState({
+    type: 'integration',
+    name: 'webhook',
+    id: ctx.integrationId,
+  })
+  
+  // Delete webhook from external service
+  await fetch(`${config.apiUrl}/webhooks/${state.payload.webhookId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${config.apiKey}`,
+    },
+  })
+  
+  // Clean up state
+  await client.deleteState({
+    type: 'integration',
+    name: 'webhook',
+    id: ctx.integrationId,
+  })
+  
+  logger.info('Integration unregistered successfully')
+}
+```
+
+## Implement actions
+
+Create action handlers:
+
+```typescript src/actions/send-notification.ts
+import type { ActionHandlers } from '.botpress/implementation'
+
+export const sendNotification: ActionHandlers['sendNotification'] = async ({
+  input,
+  ctx,
+  logger,
+}) => {
+  logger.info('Sending notification')
+  
+  const config = JSON.parse(ctx.configuration.payload)
+  
+  try {
+    const response = await fetch(`${config.apiUrl}/notifications`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: input.userId,
+        message: input.message,
+      }),
+    })
+    
+    const data = await response.json()
+    
+    return {
+      success: true,
+      messageId: data.id,
+    }
+  } catch (error) {
+    logger.error('Failed to send notification:', error)
+    return {
+      success: false,
+    }
+  }
+}
+```
+
+Export actions:
+
+```typescript src/actions/index.ts
+import { sendNotification } from './send-notification'
+
+export default {
+  sendNotification,
+}
+```
+
+## Implement channels
+
+Create channel message handlers:
+
+```typescript src/channels.ts
+import type { ChannelHandlers } from '.botpress/implementation'
+
+const channels: ChannelHandlers = {
+  channel: {
+    messages: {
+      text: async ({ payload, ctx, conversation, ack, logger }) => {
+        logger.info('Sending text message')
+        
+        const config = JSON.parse(ctx.configuration.payload)
+        
+        const response = await fetch(`${config.apiUrl}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            channel: conversation.tags.channel,
+            text: payload.text,
+          }),
+        })
+        
+        const data = await response.json()
+        
+        // Acknowledge message with external ID
+        await ack({
+          tags: {
+            id: data.messageId,
+          },
+        })
+      },
+    },
+  },
+}
+
+export default channels
+```
+
+## Build and test
+
+Build your integration:
+
+```bash
+bp build
+```
+
+Run in development mode:
+
+```bash
+bp dev
+```
+
+## Deploy integration
+
+Deploy to Botpress Cloud:
+
+```bash
+bp deploy
+```
+
+<Info>
+Integrations are deployed to your workspace and can be used by any bot in that workspace.
+</Info>
+
+## Add to bot
+
+Use your integration in a bot:
+
+```typescript bot.definition.ts
+import myIntegration from './bp_modules/my-integration'
+
+export default new sdk.BotDefinition({
+  // ...
+})
+  .addIntegration(myIntegration, {
+    enabled: true,
+    configuration: {
+      apiKey: process.env.MY_INTEGRATION_API_KEY,
+      apiUrl: 'https://api.example.com',
+    },
+  })
+```
+
+Use integration actions:
+
+```typescript src/index.ts
+bot.on.message('*', async ({ client }) => {
+  const result = await client.callAction({
+    type: 'myIntegration:sendNotification',
+    input: {
+      userId: 'user123',
+      message: 'Hello from bot!',
+    },
+  })
+  
+  console.log('Notification sent:', result.output.success)
+})
+```
+
+## Best practices
+
+<Steps>
+  <Step title="Error handling">
+    Always handle errors gracefully and provide meaningful error messages
+  </Step>
+  <Step title="Logging">
+    Use the logger to track integration behavior
+  </Step>
+  <Step title="Configuration validation">
+    Validate configuration values before using them
+  </Step>
+  <Step title="State management">
+    Store persistent data in integration state
+  </Step>
+  <Step title="Webhook security">
+    Validate webhook signatures to prevent unauthorized access
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Integration definition" icon="file-code" href="/integrations/integration-definition">
+    Learn about integration definition structure
+  </Card>
+  <Card title="Channels" icon="hashtag" href="/integrations/channels">
+    Implement messaging channels
+  </Card>
+  <Card title="Actions" icon="bolt" href="/integrations/actions">
+    Create integration actions
+  </Card>
+  <Card title="Events" icon="bell" href="/integrations/events">
+    Emit and handle events
+  </Card>
+</CardGroup>

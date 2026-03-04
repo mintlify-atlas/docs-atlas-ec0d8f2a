@@ -1,0 +1,477 @@
+---
+title: Installation
+description: Install the Botpress CLI, SDK, and set up your development environment
+---
+
+This guide covers everything you need to install and configure Botpress for local development.
+
+## Prerequisites
+
+Before installing Botpress, ensure your system meets these requirements:
+
+### Required software
+
+<Steps>
+  <Step title="Node.js 18.0.0 or higher">
+    Botpress requires Node.js version **18.0.0** or higher.
+
+    Check your current version:
+
+    ```bash
+    node --version
+    ```
+
+    If you need to install or upgrade Node.js:
+
+    <CardGroup cols={2}>
+      <Card title="Official installer" icon="download">
+        Download from [nodejs.org](https://nodejs.org)
+      </Card>
+      <Card title="Version manager (recommended)" icon="layer-group">
+        Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to manage multiple Node versions
+      </Card>
+    </CardGroup>
+
+    <Tip>
+    Using a version manager like `nvm` makes it easy to switch between Node.js versions for different projects.
+    </Tip>
+  </Step>
+
+  <Step title="Package manager">
+    You'll need one of these package managers:
+
+    - **npm** (comes with Node.js)
+    - **yarn** (install via `npm install -g yarn`)
+    - **pnpm** (install via `npm install -g pnpm`)
+
+    <Info>
+    All examples in this documentation work with any package manager. Choose the one you prefer.
+    </Info>
+  </Step>
+
+  <Step title="Botpress Cloud account">
+    Create a free account at [app.botpress.cloud](https://app.botpress.cloud) to:
+
+    - Deploy your bots and integrations
+    - Access the Hub and available integrations
+    - Use the visual Studio editor
+    - Manage workspaces and collaborators
+  </Step>
+</Steps>
+
+### Optional tools
+
+These tools enhance your development experience:
+
+- **Git** - Version control for your bot projects
+- **TypeScript** - Already included as a dependency, but useful for editor support
+- **VS Code** - Recommended editor with excellent TypeScript support
+
+## Install the Botpress CLI
+
+The Botpress CLI is the primary tool for building, testing, and deploying bots and integrations.
+
+### Global installation
+
+Install the CLI globally to use it anywhere on your system:
+
+<CodeGroup>
+```bash npm
+npm install -g @botpress/cli
+```
+
+```bash yarn
+yarn global add @botpress/cli
+```
+
+```bash pnpm
+pnpm install -g @botpress/cli
+```
+</CodeGroup>
+
+### Verify installation
+
+Confirm the CLI is installed and check the version:
+
+```bash
+bp --version
+```
+
+You should see output like:
+
+```
+5.5.7
+```
+
+<Note>
+The exact version number may differ based on the latest release.
+</Note>
+
+### Get help
+
+View all available commands:
+
+```bash
+bp --help
+```
+
+Get help for a specific command:
+
+```bash
+bp init --help
+bp deploy --help
+bp dev --help
+```
+
+## Authenticate with Botpress Cloud
+
+<Steps>
+  <Step title="Generate a Personal Access Token">
+    1. Log in to [Botpress Cloud](https://app.botpress.cloud)
+    2. Click your **profile avatar** in the top-right corner
+    3. Select **Personal Access Tokens**
+    4. Click **Generate Token**
+    5. Give your token a descriptive name (e.g., "Development Machine")
+    6. Copy the token and **save it securely**
+
+    <Warning>
+    Your Personal Access Token is shown only once. Store it in a password manager or secure location.
+    </Warning>
+  </Step>
+
+  <Step title="Log in via the CLI">
+    Run the login command:
+
+    ```bash
+    bp login
+    ```
+
+    You'll be prompted for:
+
+    ```
+    ? Enter your Personal Access Token: [paste token here]
+    ```
+
+    After entering your token, select your workspace:
+
+    ```
+    ? Which workspace do you want to use?
+    ❯ My Workspace
+      Company Workspace
+      Test Workspace
+    ```
+
+    <Tip>
+    The CLI caches your credentials in `~/.botpress/`, so you only need to log in once per machine.
+    </Tip>
+  </Step>
+
+  <Step title="Verify authentication">
+    Test that you're logged in correctly:
+
+    ```bash
+    bp init --help
+    ```
+
+    If authentication succeeded, you won't see any login-related errors.
+  </Step>
+</Steps>
+
+### Using profiles
+
+If you work with multiple Botpress workspaces, use profiles to switch between them:
+
+```bash
+# Log in with a named profile
+bp login --profile work
+bp login --profile personal
+
+# Use a specific profile
+bp deploy --profile work
+bp dev --profile personal
+```
+
+## Install the Botpress SDK
+
+When you create a new bot or integration with `bp init`, the SDK is automatically added as a dependency. However, you can also install it manually in existing projects.
+
+### Add to your project
+
+<CodeGroup>
+```bash npm
+npm install @botpress/sdk
+```
+
+```bash yarn
+yarn add @botpress/sdk
+```
+
+```bash pnpm
+pnpm add @botpress/sdk
+```
+</CodeGroup>
+
+### SDK usage
+
+The SDK provides TypeScript types and utilities for building bots and integrations:
+
+```typescript
+import * as sdk from '@botpress/sdk'
+import { z } from '@botpress/sdk'
+
+// Define a bot
+export default new sdk.BotDefinition({
+  actions: {
+    myAction: {
+      title: 'My Action',
+      input: {
+        schema: z.object({
+          message: z.string(),
+        }),
+      },
+      output: {
+        schema: z.object({
+          result: z.string(),
+        }),
+      },
+    },
+  },
+})
+```
+
+<Info>
+The SDK uses [Zod](https://zod.dev/) for schema validation. Import `z` from `@botpress/sdk` to define schemas.
+</Info>
+
+## Local development setup
+
+For contributors or advanced users who want to build Botpress from source.
+
+### Clone the repository
+
+```bash
+git clone https://github.com/botpress/botpress.git
+cd botpress
+```
+
+### Install dependencies
+
+Botpress uses **pnpm** as its package manager:
+
+```bash
+pnpm install
+```
+
+<Warning>
+You must use `pnpm` for local development. The repository uses pnpm workspaces and won't work with npm or yarn.
+</Warning>
+
+### Build all packages
+
+Build the CLI, SDK, and all packages:
+
+```bash
+pnpm run build
+```
+
+### Run checks
+
+Verify everything is working:
+
+```bash
+pnpm run check
+```
+
+This runs:
+- Type checking
+- Linting
+- Format checking
+- Dependency validation
+
+### Use local CLI
+
+Run the CLI directly from source:
+
+```bash
+cd packages/cli
+pnpm dev -- init
+```
+
+Or link it globally:
+
+```bash
+cd packages/cli
+npm link
+bp --version
+```
+
+## Windows-specific setup
+
+Windows users need additional prerequisites:
+
+<Steps>
+  <Step title="Install Visual C++ Redistributable">
+    Download and install the [Microsoft Visual C++ Redistributable for Visual Studio 2015-2022](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist#visual-studio-2015-2017-2019-and-2022).
+
+    This is required for native dependencies used by the CLI.
+  </Step>
+
+  <Step title="Use PowerShell or Windows Terminal">
+    For the best experience, use:
+
+    - **PowerShell** (comes with Windows)
+    - **Windows Terminal** (recommended, available in Microsoft Store)
+
+    Avoid using the legacy Command Prompt (cmd.exe).
+  </Step>
+
+  <Step title="Configure execution policy (if needed)">
+    If you encounter script execution errors, run PowerShell as Administrator and execute:
+
+    ```powershell
+    Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+    ```
+  </Step>
+</Steps>
+
+## Environment variables
+
+Some CLI commands support environment variables for configuration:
+
+| Variable | Description | Example |
+|----------|-------------|----------|
+| `BP_API_URL` | Custom Botpress API URL | `https://api.botpress.cloud` |
+| `BP_TOKEN` | Personal Access Token | `bp_pat_...` |
+| `BP_WORKDIR` | Working directory for commands | `./my-bot` |
+
+<Tip>
+Set these in a `.env` file in your project root, and the CLI will automatically load them.
+</Tip>
+
+## Verify your setup
+
+Confirm everything is installed correctly:
+
+<Steps>
+  <Step title="Check versions">
+    ```bash
+    node --version   # Should be 18.0.0 or higher
+    bp --version     # Should show CLI version
+    ```
+  </Step>
+
+  <Step title="Test authentication">
+    ```bash
+    bp login
+    ```
+
+    You should be able to select a workspace without errors.
+  </Step>
+
+  <Step title="Create a test project">
+    ```bash
+    bp init
+    # Select "bot", name it "test-bot"
+    cd test-bot
+    ```
+
+    If this succeeds, your installation is complete!
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command 'bp' not found">
+    The CLI wasn't installed globally or isn't in your PATH.
+
+    **Solution:**
+
+    1. Reinstall globally:
+       ```bash
+       npm install -g @botpress/cli
+       ```
+
+    2. Check your global npm bin directory:
+       ```bash
+       npm config get prefix
+       ```
+
+    3. Ensure this directory is in your system PATH.
+  </Accordion>
+
+  <Accordion title="Node version error">
+    You're running an unsupported Node.js version.
+
+    **Solution:**
+
+    Install Node.js 18.0.0 or higher:
+
+    ```bash
+    # Using nvm
+    nvm install 18
+    nvm use 18
+
+    # Or download from nodejs.org
+    ```
+  </Accordion>
+
+  <Accordion title="Permission denied on macOS/Linux">
+    You may need elevated permissions for global installs.
+
+    **Solution:**
+
+    Use a version manager like `nvm` (recommended) or:
+
+    ```bash
+    sudo npm install -g @botpress/cli
+    ```
+
+    <Warning>
+    Using `sudo` can cause permission issues. Use `nvm` instead when possible.
+    </Warning>
+  </Accordion>
+
+  <Accordion title="pnpm install fails in local development">
+    This usually means you're missing prerequisites.
+
+    **Solution:**
+
+    1. Ensure you have `git` installed
+    2. On Windows, install Visual C++ Redistributable
+    3. Delete `node_modules` and `pnpm-lock.yaml`, then run `pnpm install` again
+  </Accordion>
+
+  <Accordion title="Authentication keeps failing">
+    Your token might be invalid or expired.
+
+    **Solution:**
+
+    1. Generate a new Personal Access Token in Botpress Cloud
+    2. Run `bp login` again
+    3. If you're using a custom API URL, verify it's correct:
+       ```bash
+       bp login --apiUrl https://api.botpress.cloud
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/quickstart">
+    Build your first bot in under 5 minutes
+  </Card>
+
+  <Card title="CLI reference" icon="terminal" href="/cli/overview">
+    Explore all available CLI commands and options
+  </Card>
+
+  <Card title="SDK reference" icon="code" href="/sdk/introduction">
+    Learn about the Botpress SDK API
+  </Card>
+
+  <Card title="Build an integration" icon="plug" href="/integrations/overview">
+    Create custom integrations for external services
+  </Card>
+</CardGroup>

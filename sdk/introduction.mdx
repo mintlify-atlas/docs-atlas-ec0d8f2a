@@ -1,0 +1,155 @@
+---
+title: Botpress SDK
+description: Build bots, integrations, and plugins with the Botpress SDK
+---
+
+The Botpress SDK provides a comprehensive TypeScript framework for building conversational AI applications. It enables developers to create bots, integrations, and plugins with full type safety and IDE support.
+
+## Core Concepts
+
+The SDK is organized into three main modules:
+
+### Bots
+
+Bots are the primary conversational interfaces in Botpress. They handle user messages, manage state, execute actions, and orchestrate workflows.
+
+- **BotDefinition** - Defines bot structure, integrations, and capabilities
+- **BotImplementation** - Implements event handlers, actions, and business logic
+- **BotSpecificClient** - Type-safe API client for bot operations
+
+[Learn more about Bot SDK →](/sdk/bot/definition)
+
+### Integrations
+
+Integrations connect Botpress to external platforms and services. They define channels, actions, events, and handle webhook-based communication.
+
+- **IntegrationDefinition** - Defines integration capabilities and schema
+- **IntegrationImplementation** - Implements webhooks, actions, and channel handlers
+- **IntegrationSpecificClient** - Type-safe client for integration operations
+
+[Learn more about Integration SDK →](/sdk/integration/definition)
+
+### Plugins
+
+Plugins extend bot functionality with reusable components. They can add states, events, actions, and handlers that work across multiple bots.
+
+- **PluginDefinition** - Defines plugin capabilities and dependencies
+- **PluginImplementation** - Implements plugin actions and handlers
+
+[Learn more about Plugin SDK →](/sdk/plugin/definition)
+
+## Installation
+
+```bash
+npm install @botpress/sdk @botpress/client
+```
+
+## Package Exports
+
+The SDK exports all major types and utilities from `@botpress/sdk`:
+
+```typescript
+import * as sdk from '@botpress/sdk'
+
+// Bot SDK
+const botDef = new sdk.BotDefinition({ /* ... */ })
+const botImpl = new sdk.Bot({ /* ... */ })
+
+// Integration SDK  
+const integDef = new sdk.IntegrationDefinition({ /* ... */ })
+const integImpl = new sdk.Integration({ /* ... */ })
+
+// Plugin SDK
+const pluginDef = new sdk.PluginDefinition({ /* ... */ })
+const pluginImpl = new sdk.Plugin({ /* ... */ })
+
+// Schema validation
+const schema = sdk.z.object({
+  name: sdk.z.string(),
+  age: sdk.z.number()
+})
+```
+
+## Type Safety
+
+The SDK provides end-to-end type safety:
+
+```typescript
+import { BotDefinition } from '@botpress/sdk'
+import { z } from '@botpress/sdk'
+
+const definition = new BotDefinition({
+  states: {
+    userProfile: {
+      type: 'user',
+      schema: z.object({
+        name: z.string(),
+        preferences: z.array(z.string())
+      })
+    }
+  },
+  events: {
+    profileUpdated: {
+      schema: z.object({
+        userId: z.string(),
+        changes: z.record(z.string(), z.unknown())
+      })
+    }
+  }
+})
+
+// TypeScript knows the exact shape of states and events
+type UserProfile = typeof definition['states']['userProfile']['payload']
+type ProfileEvent = typeof definition['events']['profileUpdated']
+```
+
+## Client API
+
+The `@botpress/client` package provides runtime API access:
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  apiUrl: 'https://api.botpress.cloud',
+  token: process.env.BOTPRESS_TOKEN
+})
+
+const { conversation } = await client.createConversation({
+  integrationId: 'integration-id'
+})
+```
+
+[Learn more about the Client API →](/sdk/client/overview)
+
+## Error Handling
+
+The SDK includes built-in error types:
+
+```typescript
+import { RuntimeError, isApiError } from '@botpress/sdk'
+
+try {
+  await client.createMessage({ /* ... */ })
+} catch (error) {
+  if (isApiError(error)) {
+    console.error('API Error:', error.message, error.code)
+  } else {
+    throw new RuntimeError('Unexpected error', error)
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Bot SDK" icon="robot" href="/sdk/bot/definition">
+    Build conversational bots
+  </Card>
+  <Card title="Integration SDK" icon="plug" href="/sdk/integration/definition">
+    Connect external platforms
+  </Card>
+  <Card title="Plugin SDK" icon="puzzle-piece" href="/sdk/plugin/definition">
+    Create reusable components
+  </Card>
+</CardGroup>

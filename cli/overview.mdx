@@ -1,0 +1,112 @@
+---
+title: CLI overview
+description: Command-line interface for Botpress development
+---
+
+The Botpress CLI (`bp`) is your primary tool for building, testing, and deploying bots, integrations, and plugins.
+
+## Installation
+
+Install the CLI globally:
+
+```bash
+npm install -g @botpress/cli
+```
+
+Or use with npx:
+
+```bash
+npx @botpress/cli <command>
+```
+
+## Available commands
+
+### Project management
+
+- `bp init` - Initialize a new project
+- `bp build` - Build project
+- `bp bundle` - Bundle code
+- `bp generate` - Generate types
+
+### Development
+
+- `bp dev` - Run in development mode
+- `bp serve` - Serve project locally
+
+### Deployment
+
+- `bp deploy` - Deploy to cloud
+- `bp login` - Login to Botpress
+- `bp logout` - Logout from Botpress
+
+### Resource management
+
+- `bp bots` - Manage bots
+- `bp integrations` - Manage integrations
+- `bp interfaces` - Manage interfaces
+- `bp plugins` - Manage plugins
+
+### Utilities
+
+- `bp add` - Add dependencies
+- `bp remove` - Remove dependencies
+- `bp read` - Read integration definition
+- `bp lint` - Lint project
+
+## Getting help
+
+Get help for any command:
+
+```bash
+bp --help
+bp <command> --help
+```
+
+## Authentication
+
+Login to Botpress Cloud:
+
+```bash
+bp login
+```
+
+The CLI will open a browser for authentication.
+
+## Project types
+
+The CLI supports four project types:
+
+- **Bot** - Conversational AI applications
+- **Integration** - Connect to external platforms
+- **Plugin** - Reusable bot functionality
+- **Interface** - Define contracts between integrations
+
+## Common workflows
+
+### Create and deploy bot
+
+```bash
+bp init --type bot
+cd my-bot
+npm install
+bp build
+bp deploy
+```
+
+### Create and deploy integration
+
+```bash
+bp init --type integration
+cd my-integration
+npm install
+bp build
+bp deploy
+```
+
+### Development workflow
+
+```bash
+bp dev  # Start development server
+# Make changes to code
+# Server auto-reloads
+```

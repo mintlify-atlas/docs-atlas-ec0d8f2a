@@ -1,0 +1,719 @@
+---
+title: BotSpecificClient
+description: Type-safe API client for bot operations
+---
+
+The `BotSpecificClient` provides a type-safe API client for bot operations. It's automatically typed based on your bot definition and available in all handlers.
+
+## Overview
+
+The client is passed to all bot handlers and provides full TypeScript IntelliSense for:
+
+- Creating and managing conversations
+- Sending and receiving messages
+- Managing user data
+- Getting and setting state
+- Calling actions
+- Managing workflows
+- File operations
+- Table operations
+
+## Usage in Handlers
+
+The client is available as `client` in all handler props:
+
+```typescript
+import { Bot } from '@botpress/sdk'
+
+export default new Bot({
+  definition,
+  actions: {
+    myAction: async ({ client, input }) => {
+      // client is fully typed based on your bot definition
+      const { conversation } = await client.createConversation({
+        integrationId: 'integration-id'
+      })
+      
+      return { success: true }
+    }
+  },
+  on: (bot) => {
+    bot.message('text', async ({ client, message, conversation }) => {
+      // Send a message
+      await client.createMessage({
+        conversationId: conversation.id,
+        userId: message.userId,
+        type: 'text',
+        payload: { text: 'Hello!' }
+      })
+    })
+  }
+})
+```
+
+## Conversation Methods
+
+### createConversation
+
+Create a new conversation.
+
+```typescript
+await client.createConversation({
+  integrationId: string
+}): Promise<{ conversation: Conversation }>
+```
+
+### getConversation
+
+Get a conversation by ID.
+
+```typescript
+await client.getConversation({
+  id: string
+}): Promise<{ conversation: Conversation }>
+```
+
+### listConversations
+
+List conversations with optional filters.
+
+```typescript
+await client.listConversations({
+  integrationId?: string,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  conversations: Conversation[],
+  meta: { nextToken?: string }
+}>
+```
+
+### updateConversation
+
+Update conversation metadata.
+
+```typescript
+await client.updateConversation({
+  id: string,
+  tags?: Record<string, string>
+}): Promise<{ conversation: Conversation }>
+```
+
+### deleteConversation
+
+Delete a conversation.
+
+```typescript
+await client.deleteConversation({
+  id: string
+}): Promise<void>
+```
+
+## Message Methods
+
+### createMessage
+
+Create a new message in a conversation. The `type` and `payload` are typed based on your bot's message definitions.
+
+```typescript
+await client.createMessage({
+  conversationId: string,
+  userId: string,
+  type: 'text' | 'image' | 'file' | /* your message types */,
+  payload: { /* typed based on message type */ },
+  tags?: Record<string, string>
+}): Promise<{ message: Message }>
+```
+
+**Example:**
+
+```typescript
+// Text message
+await client.createMessage({
+  conversationId: conversation.id,
+  userId: user.id,
+  type: 'text',
+  payload: {
+    text: 'Hello, how can I help you?'
+  },
+  tags: {
+    category: 'greeting'
+  }
+})
+
+// Image message
+await client.createMessage({
+  conversationId: conversation.id,
+  userId: user.id,
+  type: 'image',
+  payload: {
+    imageUrl: 'https://example.com/image.png'
+  }
+})
+```
+
+### getMessage
+
+Get a message by ID.
+
+```typescript
+await client.getMessage({
+  id: string
+}): Promise<{ message: Message }>
+```
+
+### listMessages
+
+List messages in a conversation.
+
+```typescript
+await client.listMessages({
+  conversationId: string,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  messages: Message[],
+  meta: { nextToken?: string }
+}>
+```
+
+### updateMessage
+
+Update message tags.
+
+```typescript
+await client.updateMessage({
+  id: string,
+  tags: Record<string, string>
+}): Promise<{ message: Message }>
+```
+
+### deleteMessage
+
+Delete a message.
+
+```typescript
+await client.deleteMessage({
+  id: string
+}): Promise<void>
+```
+
+## User Methods
+
+### createUser
+
+Create a new user.
+
+```typescript
+await client.createUser({
+  tags?: Record<string, string>
+}): Promise<{ user: User }>
+```
+
+### getUser
+
+Get a user by ID.
+
+```typescript
+await client.getUser({
+  id: string
+}): Promise<{ user: User }>
+```
+
+### listUsers
+
+List users with optional filters.
+
+```typescript
+await client.listUsers({
+  tags?: Record<string, string>,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  users: User[],
+  meta: { nextToken?: string }
+}>
+```
+
+### updateUser
+
+Update user tags.
+
+```typescript
+await client.updateUser({
+  id: string,
+  tags?: Record<string, string>
+}): Promise<{ user: User }>
+```
+
+### deleteUser
+
+Delete a user.
+
+```typescript
+await client.deleteUser({
+  id: string
+}): Promise<void>
+```
+
+## State Methods
+
+State operations are fully typed based on your bot's state definitions.
+
+### getState
+
+Get state by name and type.
+
+```typescript
+await client.getState({
+  type: 'conversation' | 'user' | 'bot' | 'workflow',
+  name: /* your state names */,
+  id: string
+}): Promise<{
+  state: {
+    id: string,
+    type: StateType,
+    name: string,
+    payload: /* typed based on state definition */,
+    createdAt: string,
+    updatedAt: string
+  }
+}>
+```
+
+**Example:**
+
+```typescript
+// Get user profile state
+const { state } = await client.getState({
+  type: 'user',
+  name: 'profile',
+  id: user.id
+})
+
+// TypeScript knows the shape of state.payload
+console.log(state.payload.name, state.payload.email)
+```
+
+### setState
+
+Set or update state.
+
+```typescript
+await client.setState({
+  type: 'conversation' | 'user' | 'bot' | 'workflow',
+  name: /* your state names */,
+  id: string,
+  payload: /* typed based on state definition */ | null
+}): Promise<{ state: State }>
+```
+
+**Example:**
+
+```typescript
+// Set conversation topic
+await client.setState({
+  type: 'conversation',
+  name: 'topic',
+  id: conversation.id,
+  payload: {
+    topic: 'technical-support',
+    startedAt: new Date().toISOString()
+  }
+})
+
+// Clear state (set to null)
+await client.setState({
+  type: 'user',
+  name: 'session',
+  id: user.id,
+  payload: null
+})
+```
+
+### getOrSetState
+
+Get existing state or set it if it doesn't exist.
+
+```typescript
+await client.getOrSetState({
+  type: StateType,
+  name: string,
+  id: string,
+  payload: /* typed payload */
+}): Promise<{ state: State }>
+```
+
+### patchState
+
+Partially update state payload.
+
+```typescript
+await client.patchState({
+  type: StateType,
+  name: string,
+  id: string,
+  payload: Partial</* typed payload */>
+}): Promise<{ state: State }>
+```
+
+**Example:**
+
+```typescript
+// Update only specific fields
+await client.patchState({
+  type: 'user',
+  name: 'profile',
+  id: user.id,
+  payload: {
+    lastActive: new Date().toISOString()
+  }
+})
+```
+
+## Event Methods
+
+### createEvent
+
+Create a custom event. Type and payload are typed based on your event definitions.
+
+```typescript
+await client.createEvent({
+  type: /* your event types */,
+  payload: /* typed based on event definition */
+}): Promise<{ event: Event }>
+```
+
+**Example:**
+
+```typescript
+await client.createEvent({
+  type: 'orderPlaced',
+  payload: {
+    orderId: 'order-123',
+    amount: 99.99,
+    items: ['item1', 'item2']
+  }
+})
+```
+
+### getEvent
+
+Get an event by ID.
+
+```typescript
+await client.getEvent({
+  id: string
+}): Promise<{ event: Event }>
+```
+
+### listEvents
+
+List events with optional filters.
+
+```typescript
+await client.listEvents({
+  type?: string,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  events: Event[],
+  meta: { nextToken?: string }
+}>
+```
+
+## Action Methods
+
+### callAction
+
+Call an integration action. Both input and output are fully typed.
+
+```typescript
+await client.callAction({
+  type: /* integration action name */,
+  input: /* typed based on action definition */
+}): Promise<{
+  output: /* typed based on action definition */
+}>
+```
+
+**Example:**
+
+```typescript
+// Call GitHub integration action
+const result = await client.callAction({
+  type: 'github:createIssue',
+  input: {
+    title: 'Bug Report',
+    body: 'Description of the bug',
+    labels: ['bug', 'priority-high']
+  }
+})
+
+// TypeScript knows the output type
+console.log('Issue created:', result.output.issueUrl)
+```
+
+## Workflow Methods
+
+**EXPERIMENTAL** - Workflow operations.
+
+### createWorkflow
+
+Create a new workflow instance.
+
+```typescript
+await client.createWorkflow({
+  name: /* workflow name */,
+  input: /* typed based on workflow definition */,
+  tags?: /* typed based on workflow tags */
+}): Promise<{ workflow: Workflow }>
+```
+
+### getOrCreateWorkflow
+
+Get or create a workflow instance.
+
+```typescript
+await client.getOrCreateWorkflow({
+  name: string,
+  input: /* typed */,
+  tags?: /* typed */
+}): Promise<{ workflow: Workflow }>
+```
+
+### getWorkflow
+
+Get a workflow by ID.
+
+```typescript
+await client.getWorkflow({
+  id: string
+}): Promise<{ workflow: Workflow }>
+```
+
+### updateWorkflow
+
+Update workflow state.
+
+```typescript
+await client.updateWorkflow({
+  id: string,
+  output?: object,
+  tags?: Record<string, string>
+}): Promise<{ workflow: Workflow }>
+```
+
+### deleteWorkflow
+
+Delete a workflow.
+
+```typescript
+await client.deleteWorkflow({
+  id: string
+}): Promise<void>
+```
+
+### listWorkflows
+
+List workflows with filters.
+
+```typescript
+await client.listWorkflows({
+  name?: string,
+  tags?: Record<string, string>,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  workflows: Workflow[],
+  meta: { nextToken?: string }
+}>
+```
+
+## Table Methods
+
+Table operations are typed based on your table definitions.
+
+### createTableRows
+
+Insert rows into a table.
+
+```typescript
+await client.createTableRows({
+  table: /* table name */,
+  rows: /* typed array based on table schema */
+}): Promise<{ rows: Row[] }>
+```
+
+**Example:**
+
+```typescript
+const { rows } = await client.createTableRows({
+  table: 'orders',
+  rows: [
+    {
+      userId: 'user-123',
+      productId: 'prod-456',
+      quantity: 2,
+      status: 'pending'
+    }
+  ]
+})
+```
+
+### findTableRows
+
+Query table rows with filters.
+
+```typescript
+await client.findTableRows({
+  table: string,
+  filter?: /* typed filter based on table schema */,
+  limit?: number,
+  offset?: number,
+  orderBy?: string,
+  group?: object
+}): Promise<{ rows: Row[] }>
+```
+
+**Example:**
+
+```typescript
+const { rows } = await client.findTableRows({
+  table: 'orders',
+  filter: {
+    userId: 'user-123',
+    status: 'completed'
+  },
+  orderBy: 'createdAt',
+  limit: 10
+})
+```
+
+### getTableRow
+
+Get a single row by ID.
+
+```typescript
+await client.getTableRow({
+  table: string,
+  id: number
+}): Promise<{ row: Row }>
+```
+
+### updateTableRows
+
+Update existing rows.
+
+```typescript
+await client.updateTableRows({
+  table: string,
+  rows: Array<Partial<Row> & { id: number }>
+}): Promise<{ rows: Row[] }>
+```
+
+### upsertTableRows
+
+Insert or update rows.
+
+```typescript
+await client.upsertTableRows({
+  table: string,
+  rows: Array<Partial<Row> & { id?: number }>,
+  keyColumn?: string
+}): Promise<{
+  inserted: Row[],
+  updated: Row[]
+}>
+```
+
+### deleteTableRows
+
+Delete rows matching filter.
+
+```typescript
+await client.deleteTableRows({
+  table: string,
+  filter: /* typed filter */
+}): Promise<{ count: number }>
+```
+
+## File Methods
+
+### uploadFile
+
+Upload a file.
+
+```typescript
+await client.uploadFile({
+  key: string,
+  content: Buffer | string,
+  tags?: Record<string, string>
+}): Promise<{ file: File }>
+```
+
+### getFile
+
+Get file metadata.
+
+```typescript
+await client.getFile({
+  id: string
+}): Promise<{ file: File }>
+```
+
+### listFiles
+
+List files.
+
+```typescript
+await client.listFiles({
+  tags?: Record<string, string>,
+  limit?: number,
+  nextToken?: string
+}): Promise<{
+  files: File[],
+  meta: { nextToken?: string }
+}>
+```
+
+### deleteFile
+
+Delete a file.
+
+```typescript
+await client.deleteFile({
+  id: string
+}): Promise<void>
+```
+
+## Analytics
+
+### trackAnalytics
+
+Track custom analytics events.
+
+```typescript
+await client.trackAnalytics({
+  event: string,
+  properties?: Record<string, any>
+}): Promise<void>
+```
+
+**Example:**
+
+```typescript
+await client.trackAnalytics({
+  event: 'user_converted',
+  properties: {
+    plan: 'premium',
+    source: 'chatbot'
+  }
+})
+```
+
+## See Also
+
+- [BotDefinition](/sdk/bot/definition) - Define bot structure
+- [BotImplementation](/sdk/bot/implementation) - Implement handlers
+- [Client API](/sdk/client/overview) - Standalone client usage

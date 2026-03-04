@@ -1,80 +1,335 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Build your first Botpress bot in under 5 minutes with this hands-on guide
 ---
 
-## Get started in three steps
+Get your first Botpress bot up and running in minutes. This guide takes you from installation to deployment with real working code.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you have:
+
+- **Node.js 18.0.0 or higher** installed on your machine
+- A Botpress Cloud account (sign up at [app.botpress.cloud](https://app.botpress.cloud))
+- Your Personal Access Token from Botpress Cloud
+
+<Tip>
+Find your Personal Access Token in the Botpress Cloud dashboard under your profile settings.
+</Tip>
+
+## Install the Botpress CLI
+
+<Steps>
+  <Step title="Install the CLI globally">
+    Choose your preferred package manager:
+
+    <CodeGroup>
+    ```bash npm
+    npm install -g @botpress/cli
+    ```
+
+    ```bash yarn
+    yarn global add @botpress/cli
+    ```
+
+    ```bash pnpm
+    pnpm install -g @botpress/cli
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Verify installation">
+    Confirm the CLI is installed correctly:
+
+    ```bash
+    bp --version
+    ```
+
+    You should see the version number displayed.
+  </Step>
+
+  <Step title="Authenticate with Botpress Cloud">
+    Log in to connect your CLI to your Botpress workspace:
+
+    ```bash
+    bp login
+    ```
+
+    When prompted:
+    1. Enter your **Personal Access Token**
+    2. Select your **workspace** from the list
+
+    <Note>
+    The CLI caches your credentials locally, so you only need to log in once per machine.
+    </Note>
+  </Step>
+</Steps>
+
+## Create your first bot
+
+<Steps>
+  <Step title="Initialize a new bot project">
+    Create a new bot using the interactive CLI:
+
+    ```bash
+    bp init
+    ```
+
+    When prompted:
+    - **Project type**: Select `bot`
+    - **Template**: Choose `empty-bot` (default)
+    - **Name**: Enter a name like `my-first-bot`
+
+    This creates a new directory with your bot's scaffolding.
+  </Step>
+
+  <Step title="Navigate to your bot directory">
+    ```bash
+    cd my-first-bot
+    ```
+  </Step>
+
+  <Step title="Understand the project structure">
+    Your bot contains two key files:
+
+    **bot.definition.ts** - Defines your bot's configuration:
+    ```typescript bot.definition.ts
+    import { BotDefinition } from '@botpress/sdk'
+
+    export default new BotDefinition({
+      actions: {
+        sayHello: {
+          title: 'Say Hello',
+          description: 'Says hello to the caller',
+          input: {
+            schema: z.object({ 
+              name: z.string().optional() 
+            }),
+          },
+          output: {
+            schema: z.object({ 
+              message: z.string() 
+            }),
+          },
+        },
+      },
+    })
+    ```
+
+    **src/index.ts** - Your bot's implementation:
+    ```typescript src/index.ts
+    import * as bp from '.botpress'
+
+    const bot = new bp.Bot({
+      actions: {},
+    })
+
+    export default bot
+    ```
+  </Step>
+</Steps>
+
+## Add bot functionality
+
+Let's make your bot respond to messages with a friendly greeting.
+
+<Steps>
+  <Step title="Add a message handler">
+    Edit `src/index.ts` to handle incoming messages:
+
+    ```typescript src/index.ts
+    import * as bp from '.botpress'
+
+    const bot = new bp.Bot({
+      actions: {
+        sayHello: async ({ input }) => {
+          const name = input?.name || 'World'
+          return { message: `Hello, ${name}!` }
+        },
+      },
+    })
+
+    // Listen for all incoming text messages
+    bot.on.message('*', async ({ message, client, ctx }) => {
+      // Call the sayHello action
+      const { message: greeting } = await bot.actionHandlers.sayHello({ 
+        input: {}, 
+        client, 
+        ctx 
+      })
+
+      // Send a response back to the user
+      await client.createMessage({
+        conversationId: message.conversationId,
+        userId: ctx.botId,
+        tags: {},
+        type: 'text',
+        payload: {
+          text: greeting,
+        },
+      })
+    })
+
+    export default bot
+    ```
+
+    <Info>
+    The `bot.on.message('*', ...)` handler listens for all incoming messages. You can also listen for specific message types like `bot.on.message('text', ...)`.
+    </Info>
+  </Step>
+</Steps>
+
+## Test your bot locally
+
+<Steps>
+  <Step title="Start the development server">
+    Run your bot in development mode:
+
+    ```bash
+    bp dev
+    ```
+
+    This command:
+    - Builds your bot
+    - Starts a local development server
+    - Creates a tunnel to Botpress Cloud
+    - Deploys a dev version of your bot
+    - Watches for file changes and auto-reloads
+
+    <Warning>
+    The `bp dev` command is experimental and subject to breaking changes. Always check the output for any errors.
+    </Warning>
+  </Step>
+
+  <Step title="Test in Botpress Cloud">
+    Once the dev server is running, you'll see output like:
+
+    ```
+    Dev Bot deployed with id "abc123..." at "https://..."
+    ```
+
+    1. Open the **Botpress Cloud** dashboard
+    2. Navigate to your **dev bot** (marked with a dev badge)
+    3. Open the **Emulator** or **Web Chat**
+    4. Send a message - your bot will respond with "Hello, World!"
+  </Step>
+
+  <Step title="Make changes and watch them reload">
+    The dev server automatically reloads when you save changes:
+
+    1. Edit `src/index.ts` to customize the greeting
+    2. Save the file
+    3. The bot rebuilds automatically
+    4. Test your changes in the emulator
+
+    <Tip>
+    Press `Ctrl+C` in your terminal to stop the dev server.
+    </Tip>
+  </Step>
+</Steps>
+
+## Deploy to production
+
+<Steps>
+  <Step title="Deploy your bot">
+    When you're ready to deploy to production:
+
+    ```bash
+    bp deploy
+    ```
+
+    This command:
+    - Builds your bot for production
+    - Prompts for confirmation
+    - Deploys to Botpress Cloud
+    - Returns a bot ID
+
+    <Note>
+    The first time you run `bp deploy`, it creates a new bot. Subsequent deploys update the existing bot.
+    </Note>
+  </Step>
+
+  <Step title="Verify deployment">
+    After deployment, you'll see:
+
+    ```
+    Bot deployed with id "xyz789..."
+    ```
+
+    Your bot is now live and ready to connect to channels like Telegram, Slack, WhatsApp, and more.
+  </Step>
+</Steps>
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+  <Accordion title="Error: Node version not supported">
+    Botpress requires Node.js 18.0.0 or higher. Check your version:
+
+    ```bash
+    node --version
+    ```
+
+    If needed, upgrade Node.js from [nodejs.org](https://nodejs.org).
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+
+  <Accordion title="Error: Could not authenticate">
+    This usually means your Personal Access Token is invalid or expired:
+
+    1. Generate a new token in Botpress Cloud
+    2. Run `bp login` again
+    3. Enter the new token
+  </Accordion>
+
+  <Accordion title="Dev server won't start">
+    Common causes:
+
+    - **Port already in use**: The default port (8075) might be occupied. Specify a different port:
+      ```bash
+      bp dev --port 8080
+      ```
+
+    - **Build errors**: Check the terminal output for TypeScript errors and fix them before running `bp dev`.
+  </Accordion>
+
+  <Accordion title="Changes not reflecting in the emulator">
+    Try these steps:
+
+    1. Wait a few seconds after saving - the rebuild takes time
+    2. Refresh the Botpress Cloud dashboard
+    3. Clear your browser cache
+    4. Restart the dev server with `Ctrl+C` then `bp dev`
+  </Accordion>
+
+  <Accordion title="Deployment fails">
+    Ensure you're logged in and have the correct permissions:
+
+    ```bash
+    bp login
+    bp deploy
+    ```
+
+    Check that your `bot.definition.ts` has no validation errors.
   </Accordion>
 </AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
+  <Card title="Add integrations" icon="puzzle-piece" href="/integrations/overview">
+    Learn how to add pre-built integrations like Slack, OpenAI, and more to your bot
+  </Card>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Card title="Build bots" icon="robot" href="/bots/creating-bots">
+    Learn about bot configuration, handlers, and advanced features
+  </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+  <Card title="Integration hub" icon="grid" href="/integrations-hub/overview">
+    Browse 67+ pre-built integrations available for your bots
+  </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+  <Card title="SDK reference" icon="code" href="/sdk/introduction">
+    Explore the full TypeScript SDK API documentation
+  </Card>
 
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

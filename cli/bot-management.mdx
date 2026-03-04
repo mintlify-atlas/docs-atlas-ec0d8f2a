@@ -1,0 +1,63 @@
+---
+title: Bot management
+description: Manage bots using the CLI
+---
+
+Manage your bots with CLI commands.
+
+## List bots
+
+List all bots in workspace:
+
+```bash
+bp bots list
+```
+
+Alias: `bp bots ls`
+
+## Get bot
+
+Get bot details:
+
+```bash
+bp bots get --id <bot-id>
+```
+
+## Create bot
+
+Create a new bot:
+
+```bash
+bp bots create
+```
+
+Alias: `bp bots new`
+
+## Delete bot
+
+Delete a bot:
+
+```bash
+bp bots delete --id <bot-id>
+```
+
+Alias: `bp bots rm`
+
+## Options
+
+### --id
+
+Bot ID:
+
+```bash
+bp bots get --id abc123
+bp bots delete --id abc123
+```
+
+### --workDir
+
+Working directory:
+
+```bash
+bp bots list --workDir ./my-bot
+```

@@ -1,0 +1,32 @@
+---
+title: Plugin lifecycle
+description: Understand plugin lifecycle and execution
+---
+
+Plugins follow a specific lifecycle when added to bots.
+
+## Lifecycle stages
+
+<Steps>
+  <Step title="Installation">
+    Plugin is added to bot via `addPlugin()`
+  </Step>
+  <Step title="Configuration">
+    Plugin receives configuration and dependencies
+  </Step>
+  <Step title="Registration">
+    Plugin handlers are registered
+  </Step>
+  <Step title="Active">
+    Plugin handles events and messages
+  </Step>
+</Steps>
+
+## Handler execution
+
+Plugin handlers execute before bot handlers:
+
+1. Plugin message handlers
+2. Bot message handlers
+3. Plugin event handlers  
+4. Bot event handlers

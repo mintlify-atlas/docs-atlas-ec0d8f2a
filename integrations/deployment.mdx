@@ -1,0 +1,42 @@
+---
+title: Deployment
+description: Deploy integrations to Botpress Cloud
+---
+
+Deploy your integration to make it available for bots.
+
+## Build integration
+
+```bash
+bp build
+```
+
+## Deploy to cloud
+
+```bash
+bp deploy
+```
+
+## Deployment options
+
+### Visibility
+
+```bash
+bp deploy --visibility public  # Public
+bp deploy --visibility private # Private
+bp deploy --visibility unlisted # Unlisted
+```
+
+### Dry run
+
+```bash
+bp deploy --dry-run
+```
+
+## Development mode
+
+Run integration locally:
+
+```bash
+bp dev
+```

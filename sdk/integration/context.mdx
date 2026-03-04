@@ -1,0 +1,220 @@
+---
+title: IntegrationContext
+description: Runtime context available in integration handlers
+---
+
+The `IntegrationContext` provides runtime information and configuration to all integration handlers.
+
+## Context Structure
+
+```typescript
+type IntegrationContext<TIntegration> = {
+  botId: string
+  botUserId: string
+  integrationId: string
+  integrationAlias: string
+  webhookId: string
+  operation: string
+  configuration: /* your configuration schema */
+  configurationType: string | null
+}
+```
+
+## Properties
+
+<ResponseField name="botId" type="string">
+  ID of the bot using this integration.
+</ResponseField>
+
+<ResponseField name="botUserId" type="string">
+  ID of the bot's user account.
+</ResponseField>
+
+<ResponseField name="integrationId" type="string">
+  Unique ID of this integration instance.
+</ResponseField>
+
+<ResponseField name="integrationAlias" type="string">
+  Alias assigned when adding the integration to the bot.
+</ResponseField>
+
+<ResponseField name="webhookId" type="string">
+  Unique webhook ID for receiving external events.
+</ResponseField>
+
+<ResponseField name="operation" type="string">
+  Current operation being executed:
+  - `'webhook'` - Webhook handler
+  - `'action_triggered'` - Action execution
+  - `'register'` - Integration registration
+  - `'unregister'` - Integration removal
+  - `'create_user'` - User creation
+  - `'create_conversation'` - Conversation creation
+</ResponseField>
+
+<ResponseField name="configuration" type="object">
+  Integration configuration values matching your schema.
+  Fully typed based on your `IntegrationDefinition`.
+</ResponseField>
+
+<ResponseField name="configurationType" type="string | null">
+  For integrations with multiple configurations, indicates which one is active.
+  `null` if using the primary configuration.
+</ResponseField>
+
+## Usage Examples
+
+### Accessing Configuration
+
+```typescript
+import { Integration } from '@botpress/sdk'
+
+export default new Integration({
+  definition,
+  
+  handler: async ({ ctx, logger }) => {
+    // Access typed configuration
+    const apiKey = ctx.configuration.apiKey
+    const webhookSecret = ctx.configuration.webhookSecret
+    
+    logger.forBot().info('Webhook for bot:', ctx.botId)
+  },
+  
+  actions: {
+    sendMessage: async ({ ctx, input }) => {
+      // Use configuration in actions
+      const client = createAPIClient({
+        apiKey: ctx.configuration.apiKey,
+        baseUrl: ctx.configuration.baseUrl
+      })
+      
+      return await client.send(input)
+    }
+  }
+})
+```
+
+### Multiple Configurations
+
+```typescript
+// integration.definition.ts
+export default new IntegrationDefinition({
+  name: 'github',
+  version: '1.0.0',
+  
+  configurations: {
+    oauth: {
+      title: 'OAuth',
+      schema: z.object({
+        clientId: z.string(),
+        clientSecret: z.string()
+      })
+    },
+    personalAccessToken: {
+      title: 'Personal Access Token',
+      schema: z.object({
+        token: z.string()
+      })
+    }
+  }
+})
+
+// index.ts
+export default new Integration({
+  definition,
+  
+  register: async ({ ctx }) => {
+    if (ctx.configurationType === 'oauth') {
+      // OAuth setup
+      const { clientId, clientSecret } = ctx.configuration
+      // ...
+    } else if (ctx.configurationType === 'personalAccessToken') {
+      // PAT setup
+      const { token } = ctx.configuration
+      // ...
+    }
+  }
+})
+```
+
+### Bot-Specific Logic
+
+```typescript
+export default new Integration({
+  definition,
+  
+  handler: async ({ ctx, client, logger }) => {
+    logger.forBot().info('Processing webhook for bot:', ctx.botId)
+    
+    // Store state specific to this bot
+    await client.setState({
+      type: 'integration',
+      name: 'lastWebhook',
+      id: ctx.integrationId,
+      payload: {
+        botId: ctx.botId,
+        timestamp: new Date().toISOString()
+      }
+    })
+  }
+})
+```
+
+### Webhook URL
+
+```typescript
+export default new Integration({
+  definition,
+  
+  register: async ({ ctx, webhookUrl, logger }) => {
+    logger.forBot().info('Webhook URL:', webhookUrl)
+    logger.forBot().info('Webhook ID:', ctx.webhookId)
+    
+    // Register with external service
+    await externalAPI.createWebhook({
+      url: webhookUrl,
+      events: ['message.created', 'message.updated']
+    })
+  }
+})
+```
+
+## Type Safety
+
+Context configuration is fully typed based on your definition:
+
+```typescript
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+const definition = new IntegrationDefinition({
+  name: 'myintegration',
+  version: '1.0.0',
+  configuration: {
+    schema: z.object({
+      apiKey: z.string(),
+      region: z.enum(['us', 'eu', 'asia']),
+      debug: z.boolean().optional()
+    })
+  }
+})
+
+export default new Integration({
+  definition,
+  
+  handler: async ({ ctx }) => {
+    // TypeScript knows these types:
+    ctx.configuration.apiKey    // string
+    ctx.configuration.region    // 'us' | 'eu' | 'asia'
+    ctx.configuration.debug     // boolean | undefined
+    
+    // @ts-expect-error - Property doesn't exist
+    ctx.configuration.invalid
+  }
+})
+```
+
+## See Also
+
+- [IntegrationDefinition](/sdk/integration/definition) - Define configuration schema
+- [IntegrationImplementation](/sdk/integration/implementation) - Use context in handlers
+- [IntegrationSpecificClient](/sdk/integration/client) - API client reference

@@ -1,0 +1,420 @@
+---
+title: Conversations
+description: Manage conversations, users, and state in your bot
+---
+
+Conversations are the core of bot interactions. This guide shows you how to manage conversations, users, and state.
+
+## Access conversation data
+
+Conversation and user data are available in message handlers:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+bot.on.message('*', async ({ conversation, user, message }) => {
+  console.log('Conversation ID:', conversation.id)
+  console.log('User ID:', user.id)
+  console.log('Message ID:', message.id)
+  
+  // Access conversation tags
+  console.log('Conversation tags:', conversation.tags)
+  
+  // Access user tags  
+  console.log('User tags:', user.tags)
+})
+
+export default bot
+```
+
+## Get conversation
+
+Fetch conversation details:
+
+```typescript
+bot.on.message('*', async ({ client, conversation }) => {
+  const { conversation: conv } = await client.getConversation({
+    id: conversation.id,
+  })
+  
+  console.log('Integration:', conv.integration)
+  console.log('Created at:', conv.createdAt)
+  console.log('Tags:', conv.tags)
+})
+```
+
+## Update conversation
+
+Update conversation tags:
+
+```typescript
+bot.on.message('*', async ({ client, conversation }) => {
+  await client.updateConversation({
+    id: conversation.id,
+    tags: {
+      ...conversation.tags,
+      topic: 'support',
+      priority: 'high',
+      lastActivity: new Date().toISOString(),
+    },
+  })
+})
+```
+
+## Get user
+
+Fetch user details:
+
+```typescript
+bot.on.message('*', async ({ client, user }) => {
+  const { user: userData } = await client.getUser({
+    id: user.id,
+  })
+  
+  console.log('User name:', userData.name)
+  console.log('User tags:', userData.tags)
+})
+```
+
+## Update user
+
+Update user tags:
+
+```typescript
+bot.on.message('*', async ({ client, user }) => {
+  await client.updateUser({
+    id: user.id,
+    tags: {
+      ...user.tags,
+      language: 'en',
+      timezone: 'America/New_York',
+      lastSeen: new Date().toISOString(),
+    },
+  })
+})
+```
+
+## List conversations
+
+List all bot conversations:
+
+```typescript
+bot.on.event('dailyReport', async ({ client }) => {
+  const { conversations } = await client.listConversations({
+    limit: 100,
+  })
+  
+  console.log(`Total conversations: ${conversations.length}`)
+  
+  for (const conv of conversations) {
+    console.log(`- ${conv.id}: ${conv.tags.topic}`)
+  }
+})
+```
+
+### Pagination
+
+```typescript
+let nextToken: string | undefined
+const allConversations = []
+
+do {
+  const { conversations, meta } = await client.listConversations({
+    limit: 100,
+    nextToken,
+  })
+  
+  allConversations.push(...conversations)
+  nextToken = meta.nextToken
+} while (nextToken)
+
+console.log(`Found ${allConversations.length} conversations`)
+```
+
+## List users
+
+List all bot users:
+
+```typescript
+bot.on.event('userReport', async ({ client }) => {
+  const { users } = await client.listUsers({
+    limit: 100,
+  })
+  
+  console.log(`Total users: ${users.length}`)
+  
+  for (const user of users) {
+    console.log(`- ${user.id}: ${user.name || 'Unknown'}`)
+  }
+})
+```
+
+## Delete conversation
+
+Delete a conversation:
+
+```typescript
+bot.on.message('text', async ({ client, conversation, message }) => {
+  if (message.payload.text === '/delete') {
+    await client.deleteConversation({
+      id: conversation.id,
+    })
+    
+    console.log('Conversation deleted')
+  }
+})
+```
+
+## Delete user
+
+Delete a user:
+
+```typescript
+bot.on.message('text', async ({ client, user, message }) => {
+  if (message.payload.text === '/deleteAccount') {
+    await client.deleteUser({
+      id: user.id,
+    })
+    
+    console.log('User deleted')
+  }
+})
+```
+
+## State management
+
+Manage state scoped to conversations, users, bots, or workflows.
+
+### Get or set state
+
+Get existing state or initialize with default:
+
+```typescript
+bot.on.message('*', async ({ client, user }) => {
+  const { state } = await client.getOrSetState({
+    type: 'user',
+    id: user.id,
+    name: 'preferences',
+    payload: {
+      language: 'en',
+      timezone: 'UTC',
+      notifications: true,
+    },
+  })
+  
+  console.log('User preferences:', state.payload)
+})
+```
+
+### Set state
+
+Update state:
+
+```typescript
+bot.on.message('text', async ({ client, user, message }) => {
+  // Get current state
+  const { state } = await client.getOrSetState({
+    type: 'user',
+    id: user.id,
+    name: 'preferences',
+    payload: { language: 'en' },
+  })
+  
+  // Update state
+  await client.setState({
+    type: 'user',
+    id: user.id,
+    name: 'preferences',
+    payload: {
+      ...state.payload,
+      language: 'es',
+    },
+  })
+})
+```
+
+### Get state
+
+Retrieve state (throws if not exists):
+
+```typescript
+bot.on.message('*', async ({ client, conversation }) => {
+  try {
+    const { state } = await client.getState({
+      type: 'conversation',
+      id: conversation.id,
+      name: 'context',
+    })
+    
+    console.log('Conversation context:', state.payload)
+  } catch (error) {
+    console.log('State not found')
+  }
+})
+```
+
+### List states
+
+List all states for a scope:
+
+```typescript
+bot.on.message('*', async ({ client, user }) => {
+  const { states } = await client.listStates({
+    type: 'user',
+    id: user.id,
+  })
+  
+  for (const state of states) {
+    console.log(`State ${state.name}:`, state.payload)
+  }
+})
+```
+
+### Delete state
+
+Remove state:
+
+```typescript
+bot.on.message('text', async ({ client, user, message }) => {
+  if (message.payload.text === '/reset') {
+    await client.deleteState({
+      type: 'user',
+      id: user.id,
+      name: 'preferences',
+    })
+    
+    console.log('Preferences reset')
+  }
+})
+```
+
+### State types
+
+```typescript
+type StateType = 'conversation' | 'user' | 'bot' | 'workflow'
+```
+
+#### Conversation state
+
+```typescript
+await client.setState({
+  type: 'conversation',
+  id: conversation.id,
+  name: 'context',
+  payload: { topic: 'billing', priority: 'high' },
+})
+```
+
+#### User state
+
+```typescript
+await client.setState({
+  type: 'user',
+  id: user.id,
+  name: 'profile',
+  payload: { name: 'John', email: 'john@example.com' },
+})
+```
+
+#### Bot state
+
+```typescript
+await client.setState({
+  type: 'bot',
+  id: ctx.botId,
+  name: 'config',
+  payload: { version: '1.0.0', lastRestart: new Date() },
+})
+```
+
+#### Workflow state
+
+```typescript
+await client.setState({
+  type: 'workflow',
+  id: workflow.id,
+  name: 'progress',
+  payload: { step: 3, totalSteps: 5 },
+})
+```
+
+## State expiration
+
+Define state expiration in your bot definition:
+
+```typescript bot.definition.ts
+export default new sdk.BotDefinition({
+  states: {
+    sessionData: {
+      type: 'conversation',
+      schema: sdk.z.object({
+        startTime: sdk.z.string(),
+        data: sdk.z.record(sdk.z.any()),
+      }),
+      expiry: 3600, // Expires after 1 hour (in seconds)
+    },
+  },
+})
+```
+
+Handle expired state:
+
+```typescript src/index.ts
+bot.on.stateExpired('sessionData', async ({ state, client }) => {
+  console.log('Session expired:', state.payload)
+  
+  // Clean up resources
+  // Send notification
+  // ...
+})
+```
+
+## Type signatures
+
+```typescript
+// Conversation
+type Conversation = {
+  id: string
+  createdAt: string
+  updatedAt: string
+  tags: Record<string, string>
+  integration?: {
+    id: string
+    name: string
+  }
+}
+
+// User
+type User = {
+  id: string
+  createdAt: string
+  updatedAt: string
+  name?: string
+  pictureUrl?: string
+  tags: Record<string, string>
+}
+
+// State
+type State = {
+  id: string
+  type: 'conversation' | 'user' | 'bot' | 'workflow'
+  name: string
+  payload: any
+  createdAt: string
+  updatedAt: string
+  expiresAt?: string
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Messages" icon="message" href="/bots/messages">
+    Send and receive messages
+  </Card>
+  <Card title="Bot handlers" icon="code" href="/bots/bot-handlers">
+    Implement handlers
+  </Card>
+</CardGroup>

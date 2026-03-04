@@ -1,0 +1,343 @@
+---
+title: IntegrationSpecificClient
+description: Type-safe API client for integration operations
+---
+
+The `IntegrationSpecificClient` provides a type-safe API client for integration operations. It's automatically typed based on your integration definition and available in all handlers.
+
+## Overview
+
+The client is passed to all integration handlers with full TypeScript support for:
+
+- Creating and managing conversations
+- Sending messages to bots
+- Managing users
+- Getting and setting state
+- Creating events
+- File operations
+
+All operations are typed based on your integration's channel, event, state, and entity definitions.
+
+## Usage
+
+```typescript
+import { Integration } from '@botpress/sdk'
+
+export default new Integration({
+  definition,
+  handler: async ({ req, client, ctx }) => {
+    // Create a conversation
+    const { conversation } = await client.createConversation({
+      channel: 'channel',
+      tags: {
+        channelId: 'slack-channel-id'
+      }
+    })
+    
+    // TypeScript knows the exact structure based on your definition
+    console.log(conversation.tags.channelId)
+  }
+})
+```
+
+## Conversation Methods
+
+### createConversation
+
+Create a conversation with type-safe channel and tags.
+
+```typescript
+await client.createConversation({
+  channel: /* your channel names */,
+  tags: /* typed based on channel definition */
+}): Promise<{ conversation: Conversation }>
+```
+
+**Example:**
+
+```typescript
+const { conversation } = await client.createConversation({
+  channel: 'channel',
+  tags: {
+    channelId: 'C12345',
+    workspace: 'my-workspace'
+  }
+})
+```
+
+### getOrCreateConversation
+
+Get existing conversation or create new one.
+
+```typescript
+await client.getOrCreateConversation({
+  channel: string,
+  tags: /* typed tags */,
+  discriminateByTags?: string[]
+}): Promise<{ conversation: Conversation }>
+```
+
+### updateConversation
+
+Update conversation tags.
+
+```typescript
+await client.updateConversation({
+  id: string,
+  tags?: /* typed tags */
+}): Promise<{ conversation: Conversation }>
+```
+
+## Message Methods
+
+### createMessage
+
+Create a message and trigger bot processing. Type and payload are based on channel message definitions.
+
+```typescript
+await client.createMessage({
+  conversationId: string,
+  userId: string,
+  type: /* message types from all channels */,
+  payload: /* typed based on message type */,
+  tags: /* typed based on channel message tags */
+}): Promise<{ message: Message }>
+```
+
+**Example:**
+
+```typescript
+// Text message
+await client.createMessage({
+  conversationId: conversation.id,
+  userId: user.id,
+  type: 'text',
+  payload: {
+    text: 'Hello from integration'
+  },
+  tags: {
+    messageId: 'msg-123',
+    threadId: 'thread-456'
+  }
+})
+```
+
+### getOrCreateMessage
+
+Get or create a message using tags for deduplication.
+
+```typescript
+await client.getOrCreateMessage({
+  conversationId: string,
+  userId: string,
+  type: string,
+  payload: /* typed */,
+  tags: /* typed */,
+  discriminateByTags?: string[]
+}): Promise<{ message: Message }>
+```
+
+### initializeIncomingMessage
+
+Create user, conversation, and message in one operation.
+
+```typescript
+await client.initializeIncomingMessage({
+  user?: {
+    tags: /* typed user tags */
+  },
+  conversation?: {
+    channel: string,
+    tags: /* typed conversation tags */
+  },
+  message?: {
+    type: string,
+    payload: /* typed */,
+    tags: /* typed */
+  }
+}): Promise<{
+  user: User,
+  conversation: Conversation,
+  message?: Message
+}>
+```
+
+## User Methods
+
+### createUser
+
+Create a user with integration-specific tags.
+
+```typescript
+await client.createUser({
+  tags: /* typed based on user definition */
+}): Promise<{ user: User }>
+```
+
+**Example:**
+
+```typescript
+const { user } = await client.createUser({
+  tags: {
+    slackUserId: 'U12345',
+    displayName: 'John Doe'
+  }
+})
+```
+
+### getOrCreateUser
+
+Get or create a user.
+
+```typescript
+await client.getOrCreateUser({
+  tags: /* typed tags */,
+  discriminateByTags?: string[]
+}): Promise<{ user: User }>
+```
+
+### updateUser
+
+Update user tags.
+
+```typescript
+await client.updateUser({
+  id: string,
+  tags?: /* typed tags */
+}): Promise<{ user: User }>
+```
+
+## State Methods
+
+State operations are fully typed based on your state definitions.
+
+### getState
+
+```typescript
+await client.getState({
+  type: 'integration' | 'conversation' | 'user',
+  name: /* your state names */,
+  id: string
+}): Promise<{
+  state: {
+    payload: /* typed based on state definition */
+  },
+  meta: { cached: boolean }
+}>
+```
+
+### setState
+
+```typescript
+await client.setState({
+  type: StateType,
+  name: string,
+  id: string,
+  payload: /* typed */ | null
+}): Promise<{ state: State }>
+```
+
+### patchState
+
+```typescript
+await client.patchState({
+  type: StateType,
+  name: string,
+  id: string,
+  payload: Partial</* typed */>
+}): Promise<{ state: State }>
+```
+
+## Event Methods
+
+### createEvent
+
+Create a typed event that bots can listen to.
+
+```typescript
+await client.createEvent({
+  type: /* your event types */,
+  payload: /* typed based on event definition */
+}): Promise<{ event: Event }>
+```
+
+**Example:**
+
+```typescript
+await client.createEvent({
+  type: 'messageReceived',
+  payload: {
+    channelId: 'C12345',
+    userId: 'U12345',
+    text: 'Hello',
+    timestamp: new Date().toISOString()
+  }
+})
+```
+
+## Configuration Methods
+
+### configureIntegration
+
+Update integration configuration.
+
+```typescript
+await client.configureIntegration({
+  identifier?: string
+}): Promise<void>
+```
+
+## File Methods
+
+### uploadFile
+
+```typescript
+await client.uploadFile({
+  key: string,
+  content: Buffer | string,
+  tags?: Record<string, string>
+}): Promise<{ file: File }>
+```
+
+### getFile
+
+```typescript
+await client.getFile({
+  id: string
+}): Promise<{ file: File }>
+```
+
+### listFiles
+
+```typescript
+await client.listFiles({
+  tags?: Record<string, string>,
+  limit?: number,
+  nextToken?: string
+}): Promise<{ files: File[], meta: { nextToken?: string } }>
+```
+
+### deleteFile
+
+```typescript
+await client.deleteFile({
+  id: string
+}): Promise<void>
+```
+
+## Analytics
+
+### trackAnalytics
+
+```typescript
+await client.trackAnalytics({
+  event: string,
+  properties?: Record<string, any>
+}): Promise<void>
+```
+
+## See Also
+
+- [IntegrationDefinition](/sdk/integration/definition) - Define integration
+- [IntegrationImplementation](/sdk/integration/implementation) - Implement handlers
+- [IntegrationContext](/sdk/integration/context) - Runtime context

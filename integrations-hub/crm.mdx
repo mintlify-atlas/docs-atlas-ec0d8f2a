@@ -1,0 +1,306 @@
+---
+title: CRM & Sales
+description: Connect your Botpress bot to CRM platforms and sales tools
+---
+
+Integrate your chatbot with CRM and sales platforms to manage customer relationships, track leads, sync contacts, and automate sales workflows.
+
+## Available CRM Integrations
+
+<CardGroup cols={2}>
+  <Card title="HubSpot" icon="hubspot">
+    Complete CRM platform for managing contacts, deals, tickets, and more
+  </Card>
+  
+  <Card title="Attio" icon="database">
+    Modern, flexible CRM for growing teams
+  </Card>
+  
+  <Card title="BigCommerce" icon="shopping-cart">
+    Sync products and manage e-commerce data
+  </Card>
+  
+  <Card title="Stripe" icon="stripe">
+    Payment processing and subscription management
+  </Card>
+</CardGroup>
+
+## HubSpot
+
+**Installation:**
+```bash
+bp add hubspot
+```
+
+**Description:**
+Manage contacts, tickets and more from your chatbot.
+
+**Key Features:**
+- **Contact Management:** Create, update, and search contacts
+- **Deal Tracking:** Manage sales pipeline and deals
+- **Ticket System:** Create and manage support tickets
+- **Company Records:** Organize company information
+- **Custom Properties:** Work with custom HubSpot fields
+- **Email Integration:** Send emails through HubSpot
+- **Activity Logging:** Track customer interactions
+
+**Actions:**
+- Create and update contacts
+- Create and manage deals
+- Create and update tickets
+- Search CRM records
+- Send emails
+- Log activities
+
+**Use Cases:**
+- Lead capture from chat conversations
+- Automated ticket creation for support
+- Customer data enrichment
+- Sales pipeline automation
+- Contact form alternative
+- Customer service automation
+
+**Configuration:**
+Requires HubSpot API credentials and proper scopes.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/hubspot)
+
+---
+
+## Attio
+
+**Installation:**
+```bash
+bp add attio
+```
+
+**Description:**
+Interact with Attio from your chatbot.
+
+**Key Features:**
+- **Flexible Data Model:** Customizable objects and attributes
+- **Contact Management:** Store and manage contact information
+- **Relationship Tracking:** Map connections between records
+- **Modern Interface:** Built for modern sales workflows
+- **Custom Objects:** Create custom data structures
+
+**Actions:**
+- Create and update records
+- Query Attio data
+- Manage relationships
+- Custom object operations
+
+**Events:**
+- Record created
+- Record updated
+- Relationship changes
+
+**Configuration:**
+Requires Attio Access Token.
+
+**Use Cases:**
+- Modern CRM workflows
+- Relationship intelligence
+- Custom sales processes
+- Data-driven sales automation
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/attio)
+
+---
+
+## BigCommerce
+
+**Installation:**
+```bash
+bp add bigcommerce-sync
+```
+
+**Description:**
+Sync products from BigCommerce to Botpress.
+
+**Key Features:**
+- **Product Sync:** Synchronize product catalog
+- **Inventory Management:** Track product availability
+- **E-commerce Data:** Access product details, pricing, and images
+- **Catalog Updates:** Automatic product data refresh
+
+**Use Cases:**
+- Product recommendations in chat
+- Inventory availability checking
+- Order information lookup
+- Shopping assistance bots
+- Product catalog browsing
+
+**Configuration:**
+Requires BigCommerce store credentials and API access.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/bigcommerce-sync)
+
+---
+
+## Stripe
+
+**Installation:**
+```bash
+bp add stripe
+```
+
+**Description:**
+Payment processing and subscription management integration.
+
+**Key Features:**
+- **Payment Processing:** Accept payments through chat
+- **Subscription Management:** Create and manage subscriptions
+- **Customer Management:** Store customer payment information
+- **Invoice Generation:** Create and send invoices
+- **Payment Links:** Generate checkout links
+- **Webhook Events:** Respond to payment events
+
+**Use Cases:**
+- Conversational commerce
+- Subscription signup via chat
+- Payment collection automation
+- Invoice delivery
+- Billing support automation
+- Membership management
+
+**Actions:**
+- Create payment intents
+- Manage subscriptions
+- Create customers
+- Generate invoices
+- Create checkout sessions
+
+**Events:**
+- Payment succeeded
+- Subscription created
+- Payment failed
+- Invoice paid
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/stripe)
+
+---
+
+## Related Integrations
+
+### Hunter.io
+**Installation:** `bp add hunter`
+
+Manage leads in Hunter.io for email finding and verification.
+
+**Key Features:**
+- Email finder
+- Email verification
+- Lead management
+- Domain search
+
+**Use Cases:**
+- Lead enrichment
+- Email validation
+- Prospecting automation
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/hunter)
+
+---
+
+## CRM Best Practices
+
+### Data Quality
+- **Validate inputs:** Ensure data accuracy before creating records
+- **Deduplicate:** Check for existing records before creating new ones
+- **Standardize formats:** Use consistent formatting for phone numbers, emails, etc.
+- **Enrich data:** Capture additional context from conversations
+
+### Integration Patterns
+
+**Lead Capture:**
+```typescript
+// Capture lead information from chat
+const contact = await client.callAction({
+  type: 'hubspot:createContact',
+  input: {
+    email: userEmail,
+    firstname: firstName,
+    lastname: lastName,
+    phone: phoneNumber,
+    lead_source: 'chatbot'
+  }
+})
+```
+
+**Ticket Creation:**
+```typescript
+// Create support ticket from conversation
+const ticket = await client.callAction({
+  type: 'hubspot:createTicket',
+  input: {
+    subject: issueSubject,
+    description: issueDescription,
+    priority: 'high',
+    contact_id: contactId
+  }
+})
+```
+
+### Workflow Automation
+
+1. **Lead Qualification:**
+   - Capture lead info in chat
+   - Create CRM contact
+   - Score and route lead
+   - Notify sales team
+
+2. **Support Ticket Flow:**
+   - User describes issue
+   - Bot attempts resolution
+   - Create ticket if needed
+   - Track ticket status
+
+3. **Sales Pipeline:**
+   - Identify sales opportunity
+   - Create deal in CRM
+   - Update deal stages
+   - Schedule follow-ups
+
+### Multi-CRM Strategy
+
+Some organizations use multiple systems:
+
+```bash
+# Install multiple CRM integrations
+bp add hubspot attio stripe
+```
+
+- **HubSpot:** Marketing and sales
+- **Attio:** Custom relationship tracking
+- **Stripe:** Payment and billing
+
+### Security Considerations
+
+- **Secure API keys:** Store credentials as secrets
+- **Access control:** Limit integration permissions
+- **Data privacy:** Comply with GDPR, CCPA regulations
+- **Audit logs:** Track CRM data changes
+- **PII handling:** Protect personally identifiable information
+
+### Performance Tips
+
+- **Batch operations:** Group multiple updates when possible
+- **Cache data:** Store frequently accessed data locally
+- **Async operations:** Don't block chat flow for CRM updates
+- **Error handling:** Gracefully handle API failures
+- **Rate limits:** Respect API rate limits
+
+---
+
+## Additional Resources
+
+- [HubSpot API Documentation](https://developers.hubspot.com/)
+- [Attio API Documentation](https://developers.attio.com/)
+- [Stripe API Documentation](https://stripe.com/docs/api)
+- [BigCommerce API Documentation](https://developer.bigcommerce.com/)

@@ -1,0 +1,67 @@
+---
+title: Integration management
+description: Manage integrations using the CLI
+---
+
+Manage integrations with CLI commands.
+
+## List integrations
+
+List all integrations:
+
+```bash
+bp integrations list
+```
+
+Alias: `bp integrations ls`
+
+## Get integration
+
+Get integration details:
+
+```bash
+bp integrations get --id <integration-id>
+```
+
+Or by name and version:
+
+```bash
+bp integrations get --name acme/slack --version 1.0.0
+```
+
+## Delete integration
+
+Delete an integration:
+
+```bash
+bp integrations delete --id <integration-id>
+```
+
+Alias: `bp integrations rm`
+
+## Options
+
+### --id
+
+Integration ID:
+
+```bash
+bp integrations get --id xyz789
+bp integrations delete --id xyz789
+```
+
+### --name
+
+Integration name:
+
+```bash
+bp integrations get --name acme/slack
+```
+
+### --version
+
+Integration version:
+
+```bash
+bp integrations get --name acme/slack --version 1.0.0
+```

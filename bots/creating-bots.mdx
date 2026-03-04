@@ -1,0 +1,250 @@
+---
+title: Creating bots
+description: Learn how to create and initialize a Botpress bot from scratch
+---
+
+Bots are the primary way to build conversational AI applications in Botpress. This guide shows you how to create a new bot project.
+
+## Initialize a new bot
+
+Use the CLI to create a new bot project:
+
+```bash
+bp init --type bot
+```
+
+The CLI will prompt you for:
+- Project name
+- Template (if multiple available)
+
+<Info>
+Bot projects don't require a workspace handle, unlike integrations and plugins.
+</Info>
+
+## Bot structure
+
+A typical bot project contains:
+
+```
+my-bot/
+├── src/
+│   └── index.ts          # Bot implementation
+├── bot.definition.ts      # Bot definition
+├── package.json
+└── tsconfig.json
+```
+
+## Create a bot definition
+
+The bot definition specifies your bot's structure, including actions, events, states, and integrations.
+
+```typescript bot.definition.ts
+import * as sdk from '@botpress/sdk'
+import telegram from './bp_modules/telegram'
+import webhook from './bp_modules/webhook'
+
+export default new sdk.BotDefinition({
+  actions: {
+    sayHello: {
+      title: 'Say Hello',
+      description: 'Says hello to the caller',
+      input: {
+        schema: sdk.z.object({ name: sdk.z.string().optional() }),
+      },
+      output: {
+        schema: sdk.z.object({ message: sdk.z.string() }),
+      },
+    },
+  },
+})
+  .addIntegration(telegram, {
+    enabled: true,
+    configuration: {
+      botToken: process.env.TELEGRAM_BOT_TOKEN,
+    },
+  })
+  .addIntegration(webhook, {
+    enabled: true,
+    configuration: {},
+  })
+```
+
+### Type signatures
+
+<CodeGroup>
+```typescript Bot definition
+class BotDefinition<
+  TStates extends BaseStates = BaseStates,
+  TEvents extends BaseEvents = BaseEvents,
+  TActions extends BaseActions = BaseActions,
+  TTables extends BaseTables = BaseTables,
+  TWorkflows extends BaseWorkflows = BaseWorkflows
+> {
+  constructor(props: BotDefinitionProps<TStates, TEvents, TActions, TTables, TWorkflows>)
+  
+  addIntegration<I extends IntegrationPackage>(
+    integrationPkg: I,
+    config?: IntegrationConfigInstance<I>
+  ): this
+  
+  addPlugin<P extends PluginPackage>(
+    pluginPkg: P,
+    config: PluginConfigInstance<P>
+  ): this
+}
+```
+
+```typescript Definition props
+type BotDefinitionProps = {
+  integrations?: { [K: string]: IntegrationInstance }
+  plugins?: { [K: string]: PluginInstance }
+  user?: UserDefinition
+  conversation?: ConversationDefinition
+  message?: MessageDefinition
+  states?: { [K in keyof TStates]: StateDefinition<TStates[K]> }
+  configuration?: ConfigurationDefinition
+  events?: { [K in keyof TEvents]: EventDefinition<TEvents[K]> }
+  recurringEvents?: Record<string, RecurringEventDefinition<TEvents>>
+  actions?: { [K in keyof TActions]: ActionDefinition<TActions[K]> }
+  tables?: { [K in keyof TTables]: TableDefinition<TTables[K]> }
+  workflows?: { [K in keyof TWorkflows]: WorkflowDefinition<TWorkflows[K]> }
+  attributes?: Record<string, string>
+}
+```
+</CodeGroup>
+
+## Add integrations
+
+Integrations provide channels and functionality to your bot:
+
+```typescript
+import slack from './bp_modules/slack'
+
+const definition = new sdk.BotDefinition({
+  // ... other config
+})
+  .addIntegration(slack, {
+    enabled: true,
+    alias: 'mySlack', // Optional alias
+    configuration: {
+      botToken: process.env.SLACK_BOT_TOKEN,
+    },
+  })
+```
+
+### Disable specific channels
+
+You can disable specific channels from an integration:
+
+```typescript
+.addIntegration(slack, {
+  enabled: true,
+  configuration: { botToken: process.env.SLACK_BOT_TOKEN },
+  disabledChannels: ['dm'], // Disable DM channel
+})
+```
+
+## Add plugins
+
+Plugins extend your bot with reusable functionality:
+
+```typescript
+import logger from './bp_modules/logger'
+
+const definition = new sdk.BotDefinition({
+  // ... other config
+})
+  .addPlugin(logger, {
+    configuration: {},
+    dependencies: {}, // Plugin dependencies
+  })
+```
+
+## Define bot resources
+
+### States
+
+States store data scoped to conversations, users, bots, or workflows:
+
+```typescript
+const definition = new sdk.BotDefinition({
+  states: {
+    userPreferences: {
+      type: 'user',
+      schema: sdk.z.object({
+        language: sdk.z.string(),
+        timezone: sdk.z.string(),
+      }),
+    },
+    conversationContext: {
+      type: 'conversation',
+      schema: sdk.z.object({
+        topic: sdk.z.string(),
+        lastActivity: sdk.z.string(),
+      }),
+      expiry: 3600, // Expires after 1 hour
+    },
+  },
+})
+```
+
+### Events
+
+Define custom events your bot can trigger:
+
+```typescript
+const definition = new sdk.BotDefinition({
+  events: {
+    orderCompleted: {
+      schema: sdk.z.object({
+        orderId: sdk.z.string(),
+        amount: sdk.z.number(),
+        timestamp: sdk.z.string(),
+      }),
+    },
+  },
+  recurringEvents: {
+    dailyReport: {
+      type: 'reportGenerated',
+      payload: { reportType: 'daily' },
+      schedule: { cron: '0 9 * * *' }, // Every day at 9am
+    },
+  },
+})
+```
+
+### Tables
+
+Define database tables for your bot:
+
+```typescript
+const definition = new sdk.BotDefinition({
+  tables: {
+    customers: {
+      schema: sdk.z.object({
+        email: sdk.z.string(),
+        name: sdk.z.string(),
+        createdAt: sdk.z.string(),
+      }),
+      indexes: [{ keys: ['email'], unique: true }],
+    },
+  },
+})
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Bot configuration" icon="gear" href="/bots/bot-configuration">
+    Configure bot properties and metadata
+  </Card>
+  <Card title="Bot handlers" icon="code" href="/bots/bot-handlers">
+    Implement message and event handlers
+  </Card>
+  <Card title="Conversations" icon="comments" href="/bots/conversations">
+    Work with conversations and users
+  </Card>
+  <Card title="Messages" icon="message" href="/bots/messages">
+    Send and receive messages
+  </Card>
+</CardGroup>

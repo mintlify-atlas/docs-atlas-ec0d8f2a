@@ -1,0 +1,529 @@
+---
+title: Bots
+description: Understanding what bots are in Botpress and how to build them
+---
+
+## What is a Bot?
+
+A bot in Botpress is a conversational application that processes messages, manages state, and executes actions. Bots are composed of:
+
+- **Definition**: Structure and capabilities (states, events, actions, configuration)
+- **Implementation**: Runtime logic (handlers, business logic)
+- **Dependencies**: Integrations and plugins that extend functionality
+
+## Creating a Bot
+
+### Bot Definition
+
+The bot definition describes what your bot can do. From `packages/sdk/src/bot/definition.ts:197`:
+
+```typescript
+import { BotDefinition } from '@botpress/sdk'
+import { z } from '@botpress/sdk'
+
+const bot = new BotDefinition({
+  // Bot configuration schema
+  configuration: {
+    schema: z.object({
+      apiKey: z.string().describe('API Key for external service'),
+      welcomeMessage: z.string().default('Hello!')
+    })
+  },
+  
+  // State definitions
+  states: {
+    userProfile: {
+      type: 'user',
+      schema: z.object({
+        name: z.string(),
+        email: z.string().email(),
+        preferences: z.object({
+          language: z.string(),
+          notifications: z.boolean()
+        })
+      })
+    },
+    conversationTopic: {
+      type: 'conversation',
+      schema: z.object({
+        currentTopic: z.string(),
+        history: z.array(z.string())
+      })
+    }
+  },
+  
+  // Custom events
+  events: {
+    userSubscribed: {
+      schema: z.object({
+        userId: z.string(),
+        plan: z.enum(['free', 'pro', 'enterprise'])
+      })
+    }
+  },
+  
+  // Custom actions
+  actions: {
+    sendEmail: {
+      title: 'Send Email',
+      description: 'Send an email to a user',
+      input: {
+        schema: z.object({
+          to: z.string().email(),
+          subject: z.string(),
+          body: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          messageId: z.string(),
+          sent: z.boolean()
+        })
+      }
+    }
+  },
+  
+  // User tags for metadata
+  user: {
+    tags: {
+      customerId: { title: 'Customer ID' },
+      tier: { title: 'Subscription Tier' }
+    }
+  },
+  
+  // Conversation tags
+  conversation: {
+    tags: {
+      channel: { title: 'Origin Channel' },
+      priority: { title: 'Priority Level' }
+    }
+  }
+})
+```
+
+### Bot Implementation
+
+The implementation contains the runtime handlers. From `packages/sdk/src/bot/implementation.ts:43`:
+
+```typescript
+import { BotImplementation } from '@botpress/sdk'
+
+const botImpl = new BotImplementation({
+  // Register handler - runs on bot startup
+  register: async ({ client, ctx }) => {
+    console.log('Bot registered successfully')
+    // Initialize resources, connect to services, etc.
+  },
+  
+  // Action implementations
+  actions: {
+    sendEmail: async ({ input, client, ctx }) => {
+      // Implement the sendEmail action
+      const result = await emailService.send({
+        to: input.to,
+        subject: input.subject,
+        body: input.body
+      })
+      
+      return {
+        messageId: result.id,
+        sent: result.success
+      }
+    }
+  },
+  
+  plugins: {} // Plugin implementations
+})
+```
+
+## Message Handlers
+
+Handle incoming messages from users:
+
+```typescript
+// Handle text messages
+botImpl.on.message('text', async ({ message, client, ctx }) => {
+  const text = message.payload.text
+  
+  // Access conversation state
+  const { state } = await client.getState({
+    type: 'conversation',
+    id: ctx.conversationId,
+    name: 'conversationTopic'
+  })
+  
+  // Process message
+  if (text.includes('help')) {
+    await client.createMessage({
+      conversationId: ctx.conversationId,
+      userId: ctx.botId,
+      type: 'text',
+      payload: { text: 'How can I help you?' }
+    })
+  }
+  
+  // Update state
+  await client.setState({
+    type: 'conversation',
+    id: ctx.conversationId,
+    name: 'conversationTopic',
+    payload: {
+      currentTopic: 'help',
+      history: [...state.history, 'help']
+    }
+  })
+})
+
+// Handle all message types with wildcard
+botImpl.on.message('*', async ({ message, client }) => {
+  console.log('Received message:', message.type)
+})
+```
+
+<Info>
+Message handlers are executed in order of registration. Use `'*'` as a catch-all handler that runs for every message type.
+</Info>
+
+## Event Handlers
+
+React to custom events:
+
+```typescript
+botImpl.on.event('userSubscribed', async ({ event, client, ctx }) => {
+  const { userId, plan } = event.payload
+  
+  // Update user tags
+  await client.updateUser({
+    id: userId,
+    tags: {
+      tier: plan
+    }
+  })
+  
+  // Send welcome message based on plan
+  const welcomeMessages = {
+    free: 'Welcome to the free plan!',
+    pro: 'Welcome to Pro! Enjoy premium features.',
+    enterprise: 'Welcome to Enterprise! Your dedicated support team is ready.'
+  }
+  
+  await client.createMessage({
+    conversationId: ctx.conversationId,
+    userId: ctx.botId,
+    type: 'text',
+    payload: { text: welcomeMessages[plan] }
+  })
+})
+```
+
+## Hooks
+
+Hooks allow you to intercept and modify data at various lifecycle points. From `packages/sdk/src/bot/implementation.ts:310`:
+
+```typescript
+// Before incoming message (preprocessing)
+botImpl.on.beforeIncomingMessage('text', async ({ message }) => {
+  // Sanitize or transform message
+  message.payload.text = message.payload.text.toLowerCase().trim()
+})
+
+// After outgoing message (logging)
+botImpl.on.afterOutgoingMessage('*', async ({ message }) => {
+  console.log('Sent message:', message.id)
+  // Log to analytics, audit trail, etc.
+})
+
+// Before action execution
+botImpl.on.beforeOutgoingCallAction('sendEmail', async ({ input }) => {
+  // Validate, rate limit, etc.
+  if (!input.to.includes('@')) {
+    throw new Error('Invalid email address')
+  }
+})
+
+// After event processing
+botImpl.on.afterIncomingEvent('userSubscribed', async ({ event }) => {
+  // Trigger side effects
+  await analytics.track('subscription_started', event.payload)
+})
+```
+
+### Available Hooks
+
+- `beforeIncomingMessage` / `afterIncomingMessage`
+- `beforeOutgoingMessage` / `afterOutgoingMessage`
+- `beforeIncomingEvent` / `afterIncomingEvent`
+- `beforeOutgoingCallAction` / `afterOutgoingCallAction`
+- `beforeIncomingCallAction` / `afterIncomingCallAction` (experimental)
+
+## Adding Integrations
+
+Integrations connect your bot to external platforms:
+
+```typescript
+import telegram from '@botpress/telegram'
+import slack from '@botpress/slack'
+
+// Add Telegram integration
+bot.addIntegration(telegram, {
+  alias: 'tg',
+  configuration: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN
+  }
+})
+
+// Add Slack integration
+bot.addIntegration(slack, {
+  alias: 'slackMain',
+  configuration: {
+    botToken: process.env.SLACK_BOT_TOKEN
+  },
+  disabledChannels: ['dm'] // Optionally disable specific channels
+})
+```
+
+From `packages/sdk/src/bot/definition.ts:258`, integrations can be aliased to distinguish between multiple instances.
+
+<Note>
+You can add multiple instances of the same integration with different aliases and configurations. For example, separate Slack integrations for different workspaces.
+</Note>
+
+## Adding Plugins
+
+Plugins provide reusable functionality:
+
+```typescript
+import analytics from '@botpress/analytics'
+import anthropic from '@botpress/anthropic'
+
+// First, add the integration that provides the interface
+bot.addIntegration(anthropic, {
+  alias: 'llm',
+  configuration: {
+    apiKey: process.env.ANTHROPIC_API_KEY
+  }
+})
+
+// Then add the plugin and wire its dependencies
+bot.addPlugin(analytics, {
+  alias: 'analytics',
+  configuration: {},
+  dependencies: {
+    // Map plugin's interface dependency to integration
+    llm: {
+      integrationAlias: 'llm',
+      integrationInterfaceAlias: 'llm'
+    }
+  }
+})
+```
+
+See [Plugins](/concepts/plugins) for more details on how plugins work.
+
+## State Management
+
+Botpress provides four types of state:
+
+<Accordion title="User State">
+Persistent state tied to a specific user across all conversations:
+
+```typescript
+const { state } = await client.getState({
+  type: 'user',
+  id: ctx.userId,
+  name: 'userProfile'
+})
+
+await client.setState({
+  type: 'user',
+  id: ctx.userId,
+  name: 'userProfile',
+  payload: { 
+    name: 'John Doe',
+    email: 'john@example.com'
+  }
+})
+```
+</Accordion>
+
+<Accordion title="Conversation State">
+State for a specific conversation:
+
+```typescript
+const { state } = await client.getState({
+  type: 'conversation',
+  id: ctx.conversationId,
+  name: 'conversationTopic'
+})
+```
+</Accordion>
+
+<Accordion title="Bot State">
+Global state shared across the entire bot:
+
+```typescript
+const { state } = await client.getState({
+  type: 'bot',
+  id: ctx.botId,
+  name: 'globalConfig'
+})
+```
+</Accordion>
+
+<Accordion title="Workflow State">
+Temporary state during workflow execution (experimental):
+
+```typescript
+const { state } = await client.getState({
+  type: 'workflow',
+  id: workflowId,
+  name: 'workflowData'
+})
+```
+</Accordion>
+
+### State Expiry
+
+You can set automatic expiry for states:
+
+```typescript
+const bot = new BotDefinition({
+  states: {
+    tempSession: {
+      type: 'conversation',
+      expiry: 3600, // Expires after 1 hour (in seconds)
+      schema: z.object({ sessionId: z.string() })
+    }
+  }
+})
+
+// Handle expired state
+botImpl.on.stateExpired('tempSession', async ({ state }) => {
+  console.log('Session expired:', state.payload.sessionId)
+  // Clean up, notify user, etc.
+})
+```
+
+## Tables
+
+Store structured data in custom tables:
+
+```typescript
+const bot = new BotDefinition({
+  tables: {
+    orders: {
+      schema: z.object({
+        orderId: z.string(),
+        userId: z.string(),
+        items: z.array(z.object({
+          productId: z.string(),
+          quantity: z.number()
+        })),
+        total: z.number(),
+        status: z.enum(['pending', 'shipped', 'delivered'])
+      }),
+      indexes: ['userId', 'status']
+    }
+  }
+})
+
+// Use in handlers
+const { rows } = await client.listTableRows({
+  table: 'orders',
+  filter: { userId: ctx.userId }
+})
+```
+
+## Workflows (Experimental)
+
+Workflows are long-running processes that can pause and resume:
+
+```typescript
+const bot = new BotDefinition({
+  workflows: {
+    orderFulfillment: {
+      title: 'Order Fulfillment',
+      input: {
+        schema: z.object({
+          orderId: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          status: z.string()
+        })
+      }
+    }
+  }
+})
+
+botImpl.on.workflowStart('orderFulfillment', async ({ workflow, client }) => {
+  console.log('Order workflow started:', workflow.input.orderId)
+})
+
+botImpl.on.workflowTimeout('orderFulfillment', async ({ workflow }) => {
+  console.log('Order workflow timed out:', workflow.id)
+})
+```
+
+## Starting Your Bot
+
+### Cloud Deployment
+
+```bash
+bp deploy
+```
+
+Deploying to Botpress Cloud provides:
+- Automatic scaling
+- Built-in state management
+- Integration with Botpress Studio
+- Analytics and monitoring
+- Webhook management
+
+### Local Development
+
+```typescript
+import { serve } from '@botpress/sdk'
+
+// Start local HTTP server
+const server = await botImpl.start(8072)
+console.log('Bot running on port 8072')
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Separate Concerns" icon="layer-group">
+    Keep definition (structure) and implementation (logic) separate for better organization and testing.
+  </Card>
+  
+  <Card title="Use Type Safety" icon="shield-check">
+    Leverage TypeScript and Zod schemas for compile-time and runtime validation.
+  </Card>
+  
+  <Card title="Handle Errors" icon="triangle-exclamation">
+    Always handle errors gracefully in handlers. Errors bubble up to Botpress Cloud for logging.
+  </Card>
+  
+  <Card title="State Management" icon="database">
+    Choose the right state scope (bot/user/conversation/workflow) based on your data's lifecycle.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Integrations" icon="plug" href="/concepts/integrations">
+    Learn how to connect your bot to external platforms
+  </Card>
+  <Card title="Plugins" icon="puzzle-piece" href="/concepts/plugins">
+    Extend your bot with reusable plugins
+  </Card>
+  <Card title="SDK Reference" icon="code" href="/sdk/introduction">
+    Explore the complete SDK API
+  </Card>
+  <Card title="Examples" icon="flask" href="/bots/creating-bots">
+    See complete bot examples
+  </Card>
+</CardGroup>

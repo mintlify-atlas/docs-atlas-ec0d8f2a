@@ -1,0 +1,314 @@
+---
+title: PluginDefinition
+description: Define reusable plugin components for bots
+---
+
+The `PluginDefinition` class defines a reusable plugin that can be added to multiple bots. Plugins can provide states, events, actions, and handlers that extend bot functionality.
+
+## Constructor
+
+```typescript
+import { PluginDefinition } from '@botpress/sdk'
+
+const plugin = new PluginDefinition(props: PluginDefinitionProps)
+```
+
+## PluginDefinitionProps
+
+<ParamField path="name" type="string" required>
+  Unique plugin identifier.
+  
+  ```typescript
+  name: 'analytics-plugin'
+  ```
+</ParamField>
+
+<ParamField path="version" type="string" required>
+  Semantic version.
+  
+  ```typescript
+  version: '1.0.0'
+  ```
+</ParamField>
+
+<ParamField path="title" type="string" optional>
+  Human-readable title.
+</ParamField>
+
+<ParamField path="description" type="string" optional>
+  Plugin description.
+</ParamField>
+
+<ParamField path="icon" type="string" optional>
+  Path to icon file.
+</ParamField>
+
+<ParamField path="interfaces" type="object" optional>
+  Interface dependencies required by the plugin.
+  
+  ```typescript
+  interfaces: {
+    storage: storageInterface
+  }
+  ```
+</ParamField>
+
+<ParamField path="integrations" type="object" optional>
+  Integration dependencies.
+  
+  ```typescript
+  integrations: {
+    analytics: mixpanelIntegration
+  }
+  ```
+</ParamField>
+
+<ParamField path="configuration" type="object" optional>
+  Plugin configuration schema.
+  
+  ```typescript
+  configuration: {
+    schema: z.object({
+      enabled: z.boolean(),
+      trackingId: z.string().optional()
+    })
+  }
+  ```
+</ParamField>
+
+<ParamField path="states" type="object" optional>
+  State definitions.
+  
+  ```typescript
+  states: {
+    sessionData: {
+      type: 'user',
+      schema: z.object({
+        sessionId: z.string(),
+        startTime: z.string().datetime()
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="events" type="object" optional>
+  Custom event definitions.
+  
+  ```typescript
+  events: {
+    eventTracked: {
+      schema: z.object({
+        eventName: z.string(),
+        properties: z.record(z.unknown())
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="actions" type="object" optional>
+  Action definitions the plugin provides.
+  
+  ```typescript
+  actions: {
+    trackEvent: {
+      title: 'Track Event',
+      input: {
+        schema: z.object({
+          event: z.string(),
+          userId: z.string(),
+          properties: z.record(z.unknown()).optional()
+        })
+      },
+      output: {
+        schema: z.object({
+          tracked: z.boolean()
+        })
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="user" type="UserDefinition" optional>
+  User-level tags.
+</ParamField>
+
+<ParamField path="conversation" type="ConversationDefinition" optional>
+  Conversation-level tags.
+</ParamField>
+
+<ParamField path="message" type="MessageDefinition" optional>
+  Message-level tags.
+</ParamField>
+
+## Entity References
+
+Plugins can reference interface entities:
+
+```typescript
+import { PluginDefinition } from '@botpress/sdk'
+import storageInterface from '@botpress/interface-storage'
+
+export default new PluginDefinition({
+  name: 'file-manager',
+  version: '1.0.0',
+  
+  interfaces: {
+    storage: storageInterface
+  },
+  
+  states: {
+    fileCache: {
+      type: 'bot',
+      schema: ({ entities }) => z.object({
+        files: z.array(entities.storage.file)
+      })
+    }
+  },
+  
+  actions: {
+    storeFile: {
+      input: {
+        schema: ({ entities }) => z.object({
+          file: entities.storage.file,
+          metadata: z.record(z.string())
+        })
+      },
+      output: {
+        schema: z.object({
+          success: z.boolean()
+        })
+      }
+    }
+  }
+})
+```
+
+## Complete Example
+
+```typescript plugin.definition.ts
+import { PluginDefinition, z } from '@botpress/sdk'
+import analyticsInterface from '@botpress/interface-analytics'
+
+export default new PluginDefinition({
+  name: 'analytics-plugin',
+  version: '1.0.0',
+  title: 'Analytics Plugin',
+  description: 'Track user interactions and events',
+  icon: 'icon.svg',
+  
+  // Dependencies
+  interfaces: {
+    analytics: analyticsInterface
+  },
+  
+  // Configuration
+  configuration: {
+    schema: z.object({
+      enabled: z.boolean().default(true),
+      sampleRate: z.number().min(0).max(1).default(1),
+      excludeEvents: z.array(z.string()).optional()
+    })
+  },
+  
+  // States
+  states: {
+    userSession: {
+      type: 'user',
+      schema: z.object({
+        sessionId: z.string(),
+        startTime: z.string().datetime(),
+        eventCount: z.number().default(0)
+      })
+    },
+    analytics: {
+      type: 'bot',
+      schema: z.object({
+        totalEvents: z.number(),
+        lastReset: z.string().datetime()
+      })
+    }
+  },
+  
+  // Events
+  events: {
+    eventTracked: {
+      schema: z.object({
+        eventName: z.string(),
+        userId: z.string(),
+        properties: z.record(z.unknown()),
+        timestamp: z.string().datetime()
+      })
+    }
+  },
+  
+  // Actions
+  actions: {
+    trackEvent: {
+      title: 'Track Event',
+      description: 'Track a custom event',
+      input: {
+        schema: z.object({
+          event: z.string(),
+          userId: z.string(),
+          properties: z.record(z.unknown()).optional()
+        })
+      },
+      output: {
+        schema: z.object({
+          tracked: z.boolean(),
+          eventId: z.string().optional()
+        })
+      }
+    },
+    getStats: {
+      title: 'Get Statistics',
+      input: {
+        schema: z.object({
+          userId: z.string().optional()
+        })
+      },
+      output: {
+        schema: z.object({
+          totalEvents: z.number(),
+          period: z.string()
+        })
+      }
+    }
+  },
+  
+  // User tags
+  user: {
+    tags: {
+      analyticsId: { title: 'Analytics ID' },
+      segment: { title: 'User Segment' }
+    }
+  },
+  
+  // Message tags
+  message: {
+    tags: {
+      tracked: { title: 'Tracked' }
+    }
+  }
+})
+```
+
+## Methods
+
+### dereferenceEntities
+
+Resolve interface entity references.
+
+```typescript
+dereferenceEntities(options?: {
+  intersectWithUnknownRecord?: boolean
+}): this
+```
+
+## See Also
+
+- [PluginImplementation](/sdk/plugin/implementation) - Implement plugin handlers
+- [BotDefinition](/sdk/bot/definition) - Add plugins to bots

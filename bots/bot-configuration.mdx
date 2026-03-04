@@ -1,0 +1,296 @@
+---
+title: Bot configuration
+description: Configure bot properties, user definitions, and conversation settings
+---
+
+Bot configuration defines metadata, user properties, conversation tags, and message tags for your bot.
+
+## User definition
+
+Define custom tags for users in your bot:
+
+```typescript bot.definition.ts
+import * as sdk from '@botpress/sdk'
+
+export default new sdk.BotDefinition({
+  user: {
+    tags: {
+      id: { 
+        title: 'User ID', 
+        description: 'The unique identifier for the user' 
+      },
+      email: { 
+        title: 'Email', 
+        description: 'User email address' 
+      },
+      language: { 
+        title: 'Language', 
+        description: 'User preferred language' 
+      },
+    },
+  },
+})
+```
+
+### Type signature
+
+```typescript
+type UserDefinition = {
+  tags?: Record<string, TagDefinition>
+}
+
+type TagDefinition = {
+  title?: string
+  description?: string
+}
+```
+
+## Conversation definition
+
+Define custom tags for conversations:
+
+```typescript
+export default new sdk.BotDefinition({
+  conversation: {
+    tags: {
+      channel: { 
+        title: 'Channel', 
+        description: 'The channel this conversation is happening on' 
+      },
+      topic: { 
+        title: 'Topic', 
+        description: 'Current conversation topic' 
+      },
+      priority: { 
+        title: 'Priority', 
+        description: 'Conversation priority level' 
+      },
+    },
+  },
+})
+```
+
+### Type signature
+
+```typescript
+type ConversationDefinition = {
+  tags?: Record<string, TagDefinition>
+}
+```
+
+## Message definition
+
+Define custom tags for messages:
+
+```typescript
+export default new sdk.BotDefinition({
+  message: {
+    tags: {
+      sentiment: { 
+        title: 'Sentiment', 
+        description: 'Message sentiment analysis result' 
+      },
+      category: { 
+        title: 'Category', 
+        description: 'Message classification category' 
+      },
+    },
+  },
+})
+```
+
+### Type signature
+
+```typescript
+type MessageDefinition = {
+  tags?: Record<string, TagDefinition>
+}
+```
+
+## Bot configuration
+
+Define configuration schema for your bot:
+
+```typescript
+export default new sdk.BotDefinition({
+  configuration: {
+    schema: sdk.z.object({
+      apiKey: sdk.z.string().describe('API key for external service'),
+      timeout: sdk.z.number().default(5000).describe('Request timeout in ms'),
+      enableAnalytics: sdk.z.boolean().default(true),
+    }),
+  },
+})
+```
+
+Access configuration in your bot implementation:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({
+  register: async ({ ctx }) => {
+    const config = JSON.parse(ctx.configuration.payload)
+    console.log('API Key:', config.apiKey)
+    console.log('Timeout:', config.timeout)
+  },
+  actions: {},
+})
+```
+
+## Attributes
+
+Add metadata attributes to your bot:
+
+```typescript
+export default new sdk.BotDefinition({
+  attributes: {
+    category: 'Customer Support',
+    version: '2.0.0',
+    author: 'Your Team',
+    environment: 'production',
+  },
+})
+```
+
+## Integration configuration
+
+Configure integrations added to your bot:
+
+### Basic configuration
+
+```typescript
+import telegram from './bp_modules/telegram'
+
+export default new sdk.BotDefinition({
+  // ...
+})
+  .addIntegration(telegram, {
+    enabled: true,
+    configuration: {
+      botToken: process.env.TELEGRAM_BOT_TOKEN,
+    },
+  })
+```
+
+### Using configuration types
+
+Integrations with multiple configuration types:
+
+```typescript
+import myIntegration from './bp_modules/my-integration'
+
+export default new sdk.BotDefinition({
+  // ...
+})
+  .addIntegration(myIntegration, {
+    enabled: true,
+    configurationType: 'advanced', // Select configuration type
+    configuration: {
+      // Configuration for 'advanced' type
+      apiEndpoint: 'https://api.example.com',
+      rateLimitPerSecond: 100,
+    },
+  })
+```
+
+### Multiple integration instances
+
+Add the same integration multiple times with different aliases:
+
+```typescript
+import slack from './bp_modules/slack'
+
+export default new sdk.BotDefinition({
+  // ...
+})
+  .addIntegration(slack, {
+    alias: 'publicSlack',
+    enabled: true,
+    configuration: {
+      botToken: process.env.PUBLIC_SLACK_TOKEN,
+    },
+  })
+  .addIntegration(slack, {
+    alias: 'internalSlack',
+    enabled: true,
+    configuration: {
+      botToken: process.env.INTERNAL_SLACK_TOKEN,
+    },
+  })
+```
+
+## Plugin configuration
+
+Configure plugins with dependencies:
+
+```typescript
+import logger from './bp_modules/logger'
+import slack from './bp_modules/slack'
+
+export default new sdk.BotDefinition({
+  // ...
+})
+  .addIntegration(slack, {
+    alias: 'mySlack',
+    enabled: true,
+    configuration: { botToken: process.env.SLACK_BOT_TOKEN },
+  })
+  .addPlugin(logger, {
+    configuration: {
+      logLevel: 'debug',
+    },
+    dependencies: {
+      messaging: {
+        integrationAlias: 'mySlack',
+        integrationInterfaceAlias: 'messaging',
+      },
+    },
+  })
+```
+
+### Type signature
+
+```typescript
+type PluginConfigInstance<P extends PluginPackage> = {
+  alias?: string
+  configuration: z.infer<P['definition']['configuration']['schema']>
+  dependencies: {
+    [K in keyof P['definition']['interfaces']]: {
+      integrationAlias: string
+      integrationInterfaceAlias: string
+    }
+  } & {
+    [K in keyof P['definition']['integrations']]: {
+      integrationAlias: string
+    }
+  }
+}
+```
+
+## Advanced options
+
+Enable experimental features:
+
+```typescript
+export default new sdk.BotDefinition({
+  __advanced: {
+    useLegacyZuiTransformer: false,
+  },
+})
+```
+
+<Warning>
+Advanced options are experimental and may change without notice.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Bot handlers" icon="code" href="/bots/bot-handlers">
+    Implement message and event handlers
+  </Card>
+  <Card title="Conversations" icon="comments" href="/bots/conversations">
+    Manage conversations and users
+  </Card>
+</CardGroup>

@@ -1,0 +1,523 @@
+---
+title: BotHandlers
+description: Event handlers and handler type reference
+---
+
+BotHandlers define the runtime behavior of your bot by responding to messages, events, state changes, and lifecycle hooks.
+
+## Handler Types
+
+Botpress bots support several types of handlers:
+
+- **Message Handlers** - Respond to incoming messages
+- **Event Handlers** - Process custom and integration events
+- **State Expiry Handlers** - Handle expired state
+- **Action Handlers** - Implement bot actions
+- **Hook Handlers** - Intercept operations before/after execution
+- **Workflow Handlers** - **EXPERIMENTAL** - Manage workflow lifecycle
+
+## Handler Props
+
+All handlers receive a props object with common properties:
+
+### CommonHandlerProps
+
+<ResponseField name="ctx" type="BotContext">
+  Bot context containing configuration and IDs.
+  
+  ```typescript
+  {
+    botId: string
+    type: string
+    operation: BotOperation
+    configuration: {
+      payload: string // JSON-encoded configuration
+    }
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="client" type="BotSpecificClient">
+  Type-safe API client for bot operations.
+</ResponseField>
+
+<ResponseField name="logger" type="BotLogger">
+  Logger instance for the bot.
+  
+  ```typescript
+  logger.forBot().info('Message')
+  logger.forBot().error('Error', error)
+  logger.forBot().debug('Debug info')
+  logger.forBot().warn('Warning')
+  ```
+</ResponseField>
+
+### InjectedHandlerProps
+
+Additional properties automatically injected:
+
+<ResponseField name="workflows" type="WorkflowProxy">
+  **EXPERIMENTAL** - Workflow management API.
+  
+  ```typescript
+  workflows.create({
+    name: 'onboarding',
+    input: { userId: user.id }
+  })
+  ```
+</ResponseField>
+
+## Message Handlers
+
+Handle incoming messages from channels.
+
+### MessagePayloads
+
+```typescript
+type MessagePayloads<TBot> = {
+  [MessageType in keyof Messages]: {
+    message: Message & {
+      type: MessageType
+      payload: Messages[MessageType]
+    }
+    user: User
+    conversation: Conversation
+    event: Event
+    
+    // Common props
+    ctx: BotContext
+    client: BotSpecificClient
+    logger: BotLogger
+    workflows: WorkflowProxy
+  }
+}
+```
+
+### MessageHandlers
+
+```typescript
+type MessageHandlers<TBot> = {
+  [MessageType in keyof Messages]: (
+    props: MessagePayloads[MessageType]
+  ) => Promise<void>
+}
+```
+
+### Example
+
+```typescript
+bot.message('text', async (props) => {
+  const { message, user, conversation, client, logger } = props
+  
+  logger.forBot().info('Text message:', message.payload.text)
+  
+  await client.createMessage({
+    conversationId: conversation.id,
+    userId: user.id,
+    type: 'text',
+    payload: { text: 'Reply' }
+  })
+})
+
+// Handle all message types
+bot.message('*', async ({ message, logger }) => {
+  logger.forBot().debug('Message received:', message.type)
+})
+```
+
+## Event Handlers
+
+Process custom and integration events.
+
+### EventPayloads
+
+```typescript
+type EventPayloads<TBot> = {
+  [EventType in keyof Events]: {
+    event: Event & {
+      type: EventType
+      payload: Events[EventType]
+    }
+    
+    // Common props
+    ctx: BotContext
+    client: BotSpecificClient
+    logger: BotLogger
+    workflows: WorkflowProxy
+  }
+}
+```
+
+### EventHandlers
+
+```typescript
+type EventHandlers<TBot> = {
+  [EventType in keyof Events]: (
+    props: EventPayloads[EventType]
+  ) => Promise<void>
+}
+```
+
+### Example
+
+```typescript
+bot.event('orderPlaced', async ({ event, client, logger }) => {
+  logger.forBot().info('Order placed:', event.payload.orderId)
+  
+  await client.createEvent({
+    type: 'orderProcessed',
+    payload: {
+      orderId: event.payload.orderId,
+      processedAt: new Date().toISOString()
+    }
+  })
+})
+
+// Handle integration events
+bot.event('github:issueOpened', async ({ event, client }) => {
+  const issue = event.payload
+  // Process GitHub issue
+})
+
+// Handle all events
+bot.event('*', async ({ event, logger }) => {
+  logger.forBot().debug('Event:', event.type)
+})
+```
+
+## State Expiry Handlers
+
+Handle state expiration events.
+
+### StateExpiredPayloads
+
+```typescript
+type StateExpiredPayloads<TBot> = {
+  [StateName in keyof States]: {
+    state: State & {
+      name: StateName
+      type: States[StateName]['type']
+      payload: States[StateName]['payload']
+    }
+    
+    // Common props
+    ctx: BotContext
+    client: BotSpecificClient
+    logger: BotLogger
+    workflows: WorkflowProxy
+  }
+}
+```
+
+### Example
+
+```typescript
+bot.stateExpired('userSession', async ({ state, client, logger }) => {
+  logger.forBot().info('Session expired:', state.id)
+  
+  // Notify user or clean up
+})
+```
+
+## Action Handlers
+
+Implement bot actions.
+
+### ActionHandlerPayloads
+
+```typescript
+type ActionHandlerPayloads<TBot> = {
+  [ActionName in keyof Actions]: {
+    type?: ActionName
+    input: Actions[ActionName]['input']
+    
+    // Common props
+    ctx: BotContext
+    client: BotSpecificClient
+    logger: BotLogger
+    workflows: WorkflowProxy
+  }
+}
+```
+
+### ActionHandlers
+
+```typescript
+type ActionHandlers<TBot> = {
+  [ActionName in keyof Actions]: (
+    props: ActionHandlerPayloads[ActionName]
+  ) => Promise<Actions[ActionName]['output']>
+}
+```
+
+### Example
+
+```typescript
+actions: {
+  createTicket: async ({ input, client, logger }) => {
+    logger.forBot().info('Creating ticket:', input.title)
+    
+    const ticket = await externalAPI.createTicket(input)
+    
+    return {
+      ticketId: ticket.id,
+      url: ticket.url
+    }
+  }
+}
+```
+
+## Hook Handlers
+
+Intercept and modify operations.
+
+### Hook Types
+
+```typescript
+type HookDefinitions = {
+  before_incoming_event: { stoppable: true }
+  before_incoming_message: { stoppable: true }
+  before_outgoing_message: { stoppable: false }
+  before_outgoing_call_action: { stoppable: false }
+  before_incoming_call_action: { stoppable: false }
+  after_incoming_event: { stoppable: true }
+  after_incoming_message: { stoppable: true }
+  after_outgoing_message: { stoppable: false }
+  after_outgoing_call_action: { stoppable: false }
+  after_incoming_call_action: { stoppable: false }
+}
+```
+
+### HookInputs
+
+```typescript
+type HookInputs<THookType, TDataType> = {
+  data: /* Event, Message, or Action data */
+  
+  // Common props
+  ctx: BotContext
+  client: BotSpecificClient
+  logger: BotLogger
+  workflows: WorkflowProxy
+}
+```
+
+### HookOutputs
+
+```typescript
+type HookOutputs<THookType> = {
+  data?: /* Modified data */
+  stop?: boolean // Only for stoppable hooks
+}
+```
+
+### Before Hooks
+
+```typescript
+// Intercept incoming events
+bot.beforeIncomingEvent('orderPlaced', async ({ data, logger }) => {
+  logger.forBot().info('Processing order event')
+  
+  // Modify event data
+  return {
+    data: {
+      ...data,
+      payload: {
+        ...data.payload,
+        timestamp: new Date().toISOString()
+      }
+    }
+  }
+})
+
+// Stop processing based on condition
+bot.beforeIncomingMessage('text', async ({ data }) => {
+  if (data.payload.text.includes('spam')) {
+    return { stop: true }
+  }
+  return { data }
+})
+
+// Intercept outgoing messages
+bot.beforeOutgoingMessage('*', async ({ data }) => {
+  return {
+    data: {
+      ...data,
+      tags: {
+        ...data.tags,
+        sentBy: 'bot'
+      }
+    }
+  }
+})
+
+// Intercept action calls
+bot.beforeOutgoingCallAction('github:createIssue', async ({ data, logger }) => {
+  logger.forBot().info('Creating GitHub issue')
+  return { data }
+})
+```
+
+### After Hooks
+
+```typescript
+// Process after event received
+bot.afterIncomingEvent('*', async ({ data, client }) => {
+  await client.trackAnalytics({
+    event: 'event_received',
+    properties: { type: data.type }
+  })
+  return { data }
+})
+
+// Process after message received
+bot.afterIncomingMessage('*', async ({ data, logger }) => {
+  logger.forBot().info('Message processed:', data.type)
+  return { data }
+})
+
+// Process after message sent
+bot.afterOutgoingMessage('*', async ({ data, logger }) => {
+  logger.forBot().debug('Message sent:', data.message.id)
+  return { data }
+})
+
+// Process after action called
+bot.afterOutgoingCallAction('*', async ({ data, client }) => {
+  // Log action results
+  return { data }
+})
+```
+
+## Workflow Handlers
+
+**EXPERIMENTAL** - Handle workflow lifecycle.
+
+### WorkflowPayloads
+
+```typescript
+type WorkflowPayloads<TWorkflowName> = {
+  conversation?: Conversation
+  user?: User
+  event: WorkflowUpdateEvent
+  workflow: ActionableWorkflow<TWorkflowName>
+  
+  // Common props
+  ctx: BotContext
+  client: BotSpecificClient
+  logger: BotLogger
+  workflows: WorkflowProxy
+}
+```
+
+### WorkflowHandlers
+
+```typescript
+type WorkflowHandlers<TBot> = {
+  [WorkflowName in keyof Workflows]: (
+    props: WorkflowPayloads[WorkflowName]
+  ) => Promise<void>
+}
+```
+
+### Example
+
+```typescript
+bot.workflowStart('onboarding', async ({ workflow, client, logger }) => {
+  logger.forBot().info('Onboarding started:', workflow.id)
+  
+  await workflow.update({
+    output: { currentStep: 'welcome' }
+  })
+})
+
+bot.workflowContinue('onboarding', async ({ workflow, client }) => {
+  // Handle workflow continuation
+})
+
+bot.workflowTimeout('onboarding', async ({ workflow, logger }) => {
+  logger.forBot().warn('Onboarding timed out:', workflow.id)
+})
+```
+
+## Handler Registration Order
+
+Handlers are executed in registration order:
+
+```typescript
+bot.message('text', async ({ logger }) => {
+  logger.forBot().info('Handler 1')
+})
+
+bot.message('text', async ({ logger }) => {
+  logger.forBot().info('Handler 2')
+})
+
+// When a text message arrives:
+// > Handler 1
+// > Handler 2
+```
+
+## Wildcard Handlers
+
+Use `'*'` to handle all types:
+
+```typescript
+// Handle all message types
+bot.message('*', async ({ message }) => {
+  // Runs for every message
+})
+
+// Handle all events
+bot.event('*', async ({ event }) => {
+  // Runs for every event
+})
+
+// Specific handler also runs
+bot.message('text', async ({ message }) => {
+  // Runs only for text messages
+})
+
+// Execution order for text message:
+// 1. Specific 'text' handlers
+// 2. Wildcard '*' handlers
+```
+
+## Error Handling
+
+Handle errors in handlers:
+
+```typescript
+import { RuntimeError } from '@botpress/sdk'
+
+bot.message('text', async ({ message, client, logger }) => {
+  try {
+    await client.callAction({
+      type: 'externalAPI:process',
+      input: { data: message.payload.text }
+    })
+  } catch (error) {
+    logger.forBot().error('Action failed:', error)
+    
+    if (error instanceof RuntimeError) {
+      // Handle SDK errors
+    }
+    
+    // Optionally notify user
+    await client.createMessage({
+      conversationId: message.conversationId,
+      userId: message.userId,
+      type: 'text',
+      payload: {
+        text: 'Sorry, something went wrong.'
+      }
+    })
+  }
+})
+```
+
+## See Also
+
+- [BotImplementation](/sdk/bot/implementation) - Implement handlers
+- [BotSpecificClient](/sdk/bot/client) - API client reference
+- [BotDefinition](/sdk/bot/definition) - Define bot structure

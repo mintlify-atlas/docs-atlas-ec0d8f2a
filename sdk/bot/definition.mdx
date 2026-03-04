@@ -1,0 +1,561 @@
+---
+title: BotDefinition
+description: Define bot structure, integrations, states, events, and actions
+---
+
+The `BotDefinition` class defines the structure and capabilities of a Botpress bot. It specifies states, events, actions, integrations, and other bot-level configuration.
+
+## Constructor
+
+```typescript
+import { BotDefinition } from '@botpress/sdk'
+
+const bot = new BotDefinition(props: BotDefinitionProps)
+```
+
+## BotDefinitionProps
+
+<ParamField path="states" type="object" optional>
+  State definitions for the bot. States can be scoped to bot, user, conversation, or workflow.
+  
+  ```typescript
+  states: {
+    userProfile: {
+      type: 'user',
+      schema: z.object({
+        name: z.string(),
+        email: z.string().email()
+      }),
+      expiry: 86400 // seconds
+    },
+    conversationContext: {
+      type: 'conversation',
+      schema: z.object({
+        topic: z.string(),
+        startedAt: z.string().datetime()
+      })
+    },
+    botConfig: {
+      type: 'bot',
+      schema: z.object({
+        version: z.string()
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="events" type="object" optional>
+  Custom event definitions for the bot.
+  
+  ```typescript
+  events: {
+    orderPlaced: {
+      schema: z.object({
+        orderId: z.string(),
+        amount: z.number(),
+        items: z.array(z.string())
+      }),
+      attributes: {
+        category: 'commerce'
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="recurringEvents" type="object" optional>
+  Scheduled events that trigger on a cron schedule.
+  
+  ```typescript
+  recurringEvents: {
+    dailyReport: {
+      type: 'reportGenerated',
+      payload: z.object({}),
+      schedule: {
+        cron: '0 9 * * *' // 9 AM daily
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="actions" type="object" optional>
+  Action definitions that can be called by the bot.
+  
+  ```typescript
+  actions: {
+    processPayment: {
+      title: 'Process Payment',
+      description: 'Process a customer payment',
+      input: {
+        schema: z.object({
+          amount: z.number(),
+          currency: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          transactionId: z.string(),
+          status: z.enum(['success', 'failed'])
+        })
+      },
+      attributes: {
+        category: 'payment'
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="tables" type="object" optional>
+  Table definitions for structured data storage.
+  
+  ```typescript
+  tables: {
+    orders: {
+      schema: z.object({
+        userId: z.string(),
+        productId: z.string(),
+        quantity: z.number(),
+        status: z.enum(['pending', 'completed'])
+      }),
+      indexes: ['userId', 'status']
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="workflows" type="object" optional>
+  **EXPERIMENTAL** - Workflow definitions for multi-step processes.
+  
+  ```typescript
+  workflows: {
+    onboarding: {
+      title: 'User Onboarding',
+      description: 'Multi-step user onboarding process',
+      input: {
+        schema: z.object({
+          userId: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          completed: z.boolean()
+        })
+      },
+      tags: {
+        priority: { title: 'Priority' },
+        assignee: { title: 'Assignee' }
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="user" type="object" optional>
+  User-level configuration and tags.
+  
+  ```typescript
+  user: {
+    tags: {
+      vip: { 
+        title: 'VIP Status',
+        description: 'Premium customer' 
+      },
+      segment: { title: 'Customer Segment' }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="conversation" type="object" optional>
+  Conversation-level configuration and tags.
+  
+  ```typescript
+  conversation: {
+    tags: {
+      priority: { title: 'Priority' },
+      department: { title: 'Department' }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="message" type="object" optional>
+  Message-level configuration and tags.
+  
+  ```typescript
+  message: {
+    tags: {
+      sentiment: { title: 'Sentiment' },
+      category: { title: 'Category' }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="configuration" type="object" optional>
+  Bot configuration schema.
+  
+  ```typescript
+  configuration: {
+    schema: z.object({
+      apiKey: z.string(),
+      webhookUrl: z.string().url()
+    })
+  }
+  ```
+</ParamField>
+
+<ParamField path="integrations" type="object" optional>
+  Integration instances (added via `addIntegration()`).
+</ParamField>
+
+<ParamField path="plugins" type="object" optional>
+  Plugin instances (added via `addPlugin()`).
+</ParamField>
+
+<ParamField path="attributes" type="object" optional>
+  Custom metadata attributes.
+  
+  ```typescript
+  attributes: {
+    category: 'customer-service',
+    version: '2.0',
+    author: 'team@company.com'
+  }
+  ```
+</ParamField>
+
+## Methods
+
+### addIntegration
+
+Add an integration to the bot.
+
+```typescript
+addIntegration<I extends IntegrationPackage>(
+  integrationPkg: I, 
+  config?: IntegrationConfigInstance<I>
+): this
+```
+
+**Parameters:**
+
+<ParamField path="integrationPkg" type="IntegrationPackage" required>
+  The integration package to add.
+</ParamField>
+
+<ParamField path="config" type="object" optional>
+  Integration configuration.
+  
+  <ParamField path="alias" type="string" optional>
+    Unique alias for this integration instance. Defaults to integration name.
+  </ParamField>
+  
+  <ParamField path="enabled" type="boolean" optional>
+    Whether the integration is enabled.
+  </ParamField>
+  
+  <ParamField path="configuration" type="object" optional>
+    Integration-specific configuration values.
+  </ParamField>
+  
+  <ParamField path="configurationType" type="string" optional>
+    For integrations with multiple configurations, specify which to use.
+  </ParamField>
+  
+  <ParamField path="disabledChannels" type="string[]" optional>
+    List of channel names to disable.
+  </ParamField>
+</ParamField>
+
+**Example:**
+
+```typescript
+import github from './integrations/github'
+import slack from './integrations/slack'
+
+const bot = new BotDefinition({})
+  .addIntegration(github, {
+    alias: 'github',
+    enabled: true,
+    configurationType: 'oauth',
+    configuration: {
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET
+    }
+  })
+  .addIntegration(slack, {
+    configuration: {
+      botToken: process.env.SLACK_BOT_TOKEN
+    }
+  })
+```
+
+### addPlugin
+
+Add a plugin to the bot.
+
+```typescript
+addPlugin<P extends PluginPackage>(
+  pluginPkg: P,
+  config: PluginConfigInstance<P>
+): this
+```
+
+**Parameters:**
+
+<ParamField path="pluginPkg" type="PluginPackage" required>
+  The plugin package to add.
+</ParamField>
+
+<ParamField path="config" type="object" required>
+  Plugin configuration.
+  
+  <ParamField path="alias" type="string" optional>
+    Unique alias for the plugin. Defaults to plugin name.
+  </ParamField>
+  
+  <ParamField path="configuration" type="object" optional>
+    Plugin-specific configuration.
+  </ParamField>
+  
+  <ParamField path="dependencies" type="object" required>
+    Map plugin dependencies to bot integrations.
+    
+    ```typescript
+    dependencies: {
+      // For interface dependencies
+      storage: {
+        integrationAlias: 's3',
+        integrationInterfaceAlias: 'fileStorage'
+      },
+      // For integration dependencies
+      messaging: {
+        integrationAlias: 'slack'
+      }
+    }
+    ```
+  </ParamField>
+</ParamField>
+
+**Example:**
+
+```typescript
+import analyticsPlugin from './plugins/analytics'
+import mixpanel from './integrations/mixpanel'
+
+const bot = new BotDefinition({})
+  .addIntegration(mixpanel, { alias: 'analytics' })
+  .addPlugin(analyticsPlugin, {
+    alias: 'analytics',
+    configuration: {
+      trackingEnabled: true
+    },
+    dependencies: {
+      analyticsProvider: {
+        integrationAlias: 'analytics'
+      }
+    }
+  })
+```
+
+### dereferencePluginEntities
+
+Resolve plugin entity references to their backing integration schemas.
+
+```typescript
+dereferencePluginEntities(): this
+```
+
+**Returns:** A copy of the bot definition with all plugin entity references resolved.
+
+## Properties
+
+<ResponseField name="metadata" type="object">
+  Bot metadata including SDK version.
+  
+  ```typescript
+  {
+    sdkVersion: string
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="withPlugins" type="object">
+  Bot definition with plugin states, events, and actions merged in.
+</ResponseField>
+
+## Type Definitions
+
+### StateType
+
+```typescript
+type StateType = 'conversation' | 'user' | 'bot' | 'workflow'
+```
+
+### StateDefinition
+
+```typescript
+type StateDefinition<TState> = {
+  type: StateType
+  schema: TState
+  expiry?: number // seconds
+}
+```
+
+### EventDefinition
+
+```typescript
+type EventDefinition<TEvent> = {
+  schema: TEvent
+  attributes?: Record<string, string>
+}
+```
+
+### ActionDefinition
+
+```typescript
+type ActionDefinition<TAction> = {
+  title?: string
+  description?: string
+  input: { schema: TAction }
+  output: { schema: ZuiObjectSchema }
+  attributes?: Record<string, string>
+}
+```
+
+### WorkflowDefinition
+
+```typescript
+type WorkflowDefinition<TWorkflow> = {
+  title?: string
+  description?: string
+  input: { schema: TWorkflow }
+  output: { schema: ZuiObjectSchema }
+  tags?: Record<string, TagDefinition>
+}
+```
+
+### TagDefinition
+
+```typescript
+type TagDefinition = {
+  title?: string
+  description?: string
+}
+```
+
+## Complete Example
+
+```typescript bot.definition.ts
+import { BotDefinition, z } from '@botpress/sdk'
+import github from './integrations/github'
+import slack from './integrations/slack'
+import linear from './integrations/linear'
+
+export default new BotDefinition({
+  // State definitions
+  states: {
+    userProfile: {
+      type: 'user',
+      schema: z.object({
+        name: z.string(),
+        email: z.string().email(),
+        preferences: z.array(z.string())
+      })
+    },
+    conversationTopic: {
+      type: 'conversation',
+      schema: z.object({
+        topic: z.string(),
+        relatedIssues: z.array(z.string())
+      })
+    }
+  },
+  
+  // Custom events
+  events: {
+    issueCreated: {
+      schema: z.object({
+        issueId: z.string(),
+        title: z.string(),
+        priority: z.enum(['low', 'medium', 'high'])
+      })
+    }
+  },
+  
+  // Recurring events
+  recurringEvents: {
+    dailyDigest: {
+      type: 'digestGenerated',
+      payload: z.object({}),
+      schedule: {
+        cron: '0 9 * * *'
+      }
+    }
+  },
+  
+  // Actions
+  actions: {
+    createTicket: {
+      title: 'Create Support Ticket',
+      input: {
+        schema: z.object({
+          title: z.string(),
+          description: z.string(),
+          priority: z.enum(['low', 'medium', 'high'])
+        })
+      },
+      output: {
+        schema: z.object({
+          ticketId: z.string(),
+          url: z.string().url()
+        })
+      }
+    }
+  },
+  
+  // User tags
+  user: {
+    tags: {
+      tier: { title: 'Customer Tier' },
+      verified: { title: 'Verified User' }
+    }
+  },
+  
+  // Conversation tags
+  conversation: {
+    tags: {
+      priority: { title: 'Priority' },
+      assignee: { title: 'Assignee' }
+    }
+  }
+})
+  .addIntegration(github, {
+    enabled: true,
+    configurationType: 'oauth',
+    configuration: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!
+    }
+  })
+  .addIntegration(slack, {
+    configuration: {
+      botToken: process.env.SLACK_BOT_TOKEN!
+    }
+  })
+  .addIntegration(linear, {
+    configuration: {
+      apiKey: process.env.LINEAR_API_KEY!
+    }
+  })
+```
+
+## See Also
+
+- [BotImplementation](/sdk/bot/implementation) - Implement bot handlers
+- [BotSpecificClient](/sdk/bot/client) - Type-safe API client
+- [BotHandlers](/sdk/bot/handlers) - Event and message handlers

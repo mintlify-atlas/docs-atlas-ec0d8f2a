@@ -1,0 +1,395 @@
+---
+title: Storage & File Management
+description: Connect your Botpress bot to cloud storage and file management platforms
+---
+
+Integrate your chatbot with cloud storage services to access, manage, and organize files across multiple platforms.
+
+## Available Storage Integrations
+
+<CardGroup cols={2}>
+  <Card title="Google Drive" icon="google-drive">
+    Access and manage files in Google Drive
+  </Card>
+  
+  <Card title="Dropbox" icon="dropbox">
+    Manage files and folders in Dropbox
+  </Card>
+  
+  <Card title="Notion" icon="note">
+    Access pages, databases, and files in Notion
+  </Card>
+  
+  <Card title="Confluence" icon="confluence">
+    Manage documentation and knowledge base files
+  </Card>
+  
+  <Card title="Airtable" icon="table">
+    Organize data in flexible database-spreadsheet hybrid
+  </Card>
+  
+  <Card title="Google Sheets" icon="sheet">
+    Access and update spreadsheet data
+  </Card>
+</CardGroup>
+
+## Google Drive
+
+**Installation:**
+```bash
+bp add googledrive
+```
+
+**Description:**
+Access and manage your Google Drive files from your bot.
+
+**Key Features:**
+- **File Access:** Read and download files
+- **File Upload:** Upload files to Drive
+- **Folder Management:** Create and organize folders
+- **File Search:** Search for files by name or content
+- **Sharing:** Manage file permissions and sharing
+- **File Metadata:** Access file properties and details
+
+**Use Cases:**
+- Document retrieval from chat
+- File upload automation
+- Shared folder management
+- Document search assistance
+- File organization workflows
+
+**Actions:**
+- List files and folders
+- Upload files
+- Download files
+- Create folders
+- Search files
+- Update file permissions
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/googledrive)
+
+---
+
+## Dropbox
+
+**Installation:**
+```bash
+bp add dropbox
+```
+
+**Description:**
+Manage your files and folders effortlessly.
+
+**Key Features:**
+- **File Management:** Upload, download, and delete files
+- **Folder Operations:** Create and manage folder structure
+- **File Sharing:** Generate sharing links
+- **Search:** Find files across your Dropbox
+- **Metadata:** Access file information and properties
+
+**Use Cases:**
+- File backup automation
+- Document sharing via chat
+- Collaborative file management
+- File organization assistance
+- Cloud storage integration
+
+**Actions:**
+- Upload files
+- Download files
+- List folder contents
+- Create folders
+- Delete files and folders
+- Create sharing links
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/dropbox)
+
+---
+
+## Notion
+
+**Installation:**
+```bash
+bp add notion
+```
+
+**Description:**
+Add pages and comments, manage databases, and engage in discussions — all within your chatbot.
+
+**Key Features:**
+- **Page Management:** Create, read, and update Notion pages
+- **Database Operations:** Query and manage database entries
+- **File Access:** Read-only file management
+- **Comments:** Add comments to pages
+- **Workspace Organization:** Navigate Notion workspace structure
+
+**Use Cases:**
+- Knowledge base updates
+- Documentation creation
+- Database entry from chat
+- Meeting notes automation
+- Team wiki management
+
+**Actions:**
+- Create and update pages
+- Query databases
+- Add comments
+- List items in folder
+- Transfer files to Botpress
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/notion)
+
+---
+
+## Confluence
+
+**Installation:**
+```bash
+bp add confluence
+```
+
+**Description:**
+Manage your files and folders effortlessly.
+
+**Key Features:**
+- **Page Management:** Create and update Confluence pages
+- **Space Access:** Navigate Confluence spaces
+- **Search:** Find content across Confluence
+- **Attachments:** Manage file attachments
+- **Collaboration:** Team documentation workflows
+
+**Use Cases:**
+- Documentation automation
+- Knowledge base updates
+- Team wiki management
+- Meeting notes creation
+- Content search assistance
+
+**Actions:**
+- Create and update pages
+- Search content
+- Manage attachments
+- Access space information
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/confluence)
+
+---
+
+## Airtable
+
+**Installation:**
+```bash
+bp add airtable
+```
+
+**Description:**
+Access and manage Airtable data to allow your chatbot to retrieve details, update records, and organize information.
+
+**Key Features:**
+- **Record Management:** Create, read, update, and list records
+- **Table Operations:** Create and update table structures
+- **Flexible Schema:** Work with custom field types
+- **Views:** Access different table views
+- **Relationships:** Manage linked records
+
+**Use Cases:**
+- Database management from chat
+- Data collection and organization
+- Inventory tracking
+- Project management databases
+- CRM-like workflows
+
+**Actions:**
+- Get Table Records
+- Create Table
+- Update Table
+- Create Record
+- Update Record
+- List Records
+
+**Configuration:**
+Requires Airtable Personal Access Token and Base ID.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/airtable)
+
+---
+
+## Google Sheets
+
+**Installation:**
+```bash
+bp add gsheets
+```
+
+**Description:**
+Access, update, and append Google Sheets data.
+
+**Key Features:**
+- **Read Data:** Query spreadsheet cells and ranges
+- **Write Data:** Update cell values
+- **Append Rows:** Add new data rows
+- **Formula Support:** Use Google Sheets formulas
+- **Multiple Sheets:** Work with multiple sheets in a workbook
+- **Batch Operations:** Update multiple cells at once
+
+**Use Cases:**
+- Data collection from chat
+- Form submissions to sheets
+- Report generation
+- Inventory tracking
+- Data analysis workflows
+- Dashboard updates
+
+**Actions:**
+- Read spreadsheet data
+- Update cell values
+- Append rows
+- Create new sheets
+- Batch updates
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/gsheets)
+
+---
+
+## File Management Patterns
+
+### File Upload Workflow
+
+```typescript
+// User uploads file in chat
+const file = event.payload.file
+
+// Upload to Google Drive
+const driveFile = await client.callAction({
+  type: 'googledrive:uploadFile',
+  input: {
+    name: file.name,
+    content: file.url,
+    folderId: 'destination-folder-id'
+  }
+})
+
+// Confirm upload
+await client.createMessage({
+  conversationId: event.conversationId,
+  userId: client.botId,
+  type: 'text',
+  payload: { text: `File uploaded: ${driveFile.name}` }
+})
+```
+
+### File Search & Retrieval
+
+```typescript
+// Search for files
+const results = await client.callAction({
+  type: 'googledrive:searchFiles',
+  input: {
+    query: userSearchQuery,
+    limit: 10
+  }
+})
+
+// Return results to user
+for (const file of results.files) {
+  await client.createMessage({
+    conversationId: event.conversationId,
+    userId: client.botId,
+    type: 'text',
+    payload: { 
+      text: `${file.name} - ${file.webViewLink}` 
+    }
+  })
+}
+```
+
+### Data Collection to Sheets
+
+```typescript
+// Collect data from conversation
+const userData = {
+  name: event.state.user.name,
+  email: event.state.user.email,
+  response: event.payload.text,
+  timestamp: new Date().toISOString()
+}
+
+// Append to Google Sheets
+await client.callAction({
+  type: 'gsheets:appendRow',
+  input: {
+    spreadsheetId: 'your-sheet-id',
+    range: 'Sheet1!A:D',
+    values: [[
+      userData.name,
+      userData.email,
+      userData.response,
+      userData.timestamp
+    ]]
+  }
+})
+```
+
+---
+
+## Best Practices
+
+### Security
+- **Access Control:** Use service accounts with minimal permissions
+- **Secure Credentials:** Store API keys and tokens as secrets
+- **Data Privacy:** Ensure compliance with data protection regulations
+- **Audit Logs:** Track file access and modifications
+
+### Performance
+- **Lazy Loading:** Only fetch files when needed
+- **Caching:** Cache frequently accessed file metadata
+- **Batch Operations:** Group multiple file operations
+- **Async Processing:** Handle large files asynchronously
+
+### User Experience
+- **Progress Indicators:** Show upload/download progress
+- **Error Handling:** Provide clear error messages
+- **File Previews:** Show file thumbnails when possible
+- **Size Limits:** Communicate file size restrictions
+
+### Organization
+- **Folder Structure:** Maintain organized folder hierarchy
+- **Naming Conventions:** Use consistent file naming
+- **Metadata:** Tag files with relevant information
+- **Cleanup:** Regularly remove unused files
+
+---
+
+## Multi-Storage Strategy
+
+Many organizations use multiple storage platforms:
+
+```bash
+# Install multiple storage integrations
+bp add googledrive dropbox notion
+```
+
+**Use cases:**
+- **Google Drive:** Team collaboration and document sharing
+- **Dropbox:** File sync and backup
+- **Notion:** Knowledge base and documentation
+- **Confluence:** Technical documentation
+- **Airtable:** Structured data and databases
+- **Google Sheets:** Data analysis and reporting
+
+---
+
+## Additional Resources
+
+- [Google Drive API Documentation](https://developers.google.com/drive)
+- [Dropbox API Documentation](https://www.dropbox.com/developers)
+- [Notion API Documentation](https://developers.notion.com/)
+- [Confluence API Documentation](https://developer.atlassian.com/cloud/confluence/)
+- [Airtable API Documentation](https://airtable.com/developers/web/api/introduction)
+- [Google Sheets API Documentation](https://developers.google.com/sheets/api)

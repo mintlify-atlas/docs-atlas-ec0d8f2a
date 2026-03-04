@@ -1,0 +1,104 @@
+---
+title: bp init
+description: Initialize a new Botpress project
+---
+
+Create a new bot, integration, plugin, or interface project.
+
+## Usage
+
+```bash
+bp init [options]
+```
+
+## Options
+
+### --type
+
+Project type to initialize:
+
+```bash
+bp init --type bot
+bp init --type integration
+bp init --type plugin
+bp init --type interface
+```
+
+### --name
+
+Project name:
+
+```bash
+bp init --type bot --name my-bot
+bp init --type integration --name acme/slack
+```
+
+<Info>
+Integrations and plugins require workspace handle: `workspace/name`
+</Info>
+
+### --workDir
+
+Working directory (default: current directory):
+
+```bash
+bp init --workDir ./projects
+```
+
+### --template
+
+Template to use:
+
+```bash
+bp init --type bot --template hello-world
+```
+
+## Interactive mode
+
+Run without options for interactive prompts:
+
+```bash
+bp init
+```
+
+The CLI will prompt for:
+1. Project type
+2. Project name
+3. Workspace (for integrations/plugins)
+4. Template (if multiple available)
+
+## Examples
+
+### Initialize bot
+
+```bash
+bp init --type bot --name customer-support
+```
+
+### Initialize integration
+
+```bash
+bp init --type integration --name acme/custom-crm
+```
+
+### Initialize plugin
+
+```bash
+bp init --type plugin --name acme/analytics
+```
+
+## After initialization
+
+Navigate to project and install dependencies:
+
+```bash
+cd my-project
+npm install
+```
+
+Build and run:
+
+```bash
+bp build
+bp dev
+```

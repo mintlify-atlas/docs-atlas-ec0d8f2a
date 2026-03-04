@@ -1,0 +1,597 @@
+---
+title: IntegrationDefinition
+description: Define integration capabilities, channels, actions, and events
+---
+
+The `IntegrationDefinition` class defines the structure and capabilities of a Botpress integration. It specifies how the integration connects to external platforms, what channels and actions it provides, and what events it can emit.
+
+## Constructor
+
+```typescript
+import { IntegrationDefinition } from '@botpress/sdk'
+
+const integration = new IntegrationDefinition(props: IntegrationDefinitionProps)
+```
+
+## IntegrationDefinitionProps
+
+<ParamField path="name" type="string" required>
+  Unique identifier for the integration.
+  
+  ```typescript
+  name: 'slack'
+  ```
+</ParamField>
+
+<ParamField path="version" type="string" required>
+  Semantic version of the integration.
+  
+  ```typescript
+  version: '1.0.0'
+  ```
+</ParamField>
+
+<ParamField path="title" type="string" optional>
+  Human-readable title.
+  
+  ```typescript
+  title: 'Slack Integration'
+  ```
+</ParamField>
+
+<ParamField path="description" type="string" optional>
+  Brief description of the integration.
+</ParamField>
+
+<ParamField path="icon" type="string" optional>
+  Path to icon file (SVG recommended).
+  
+  ```typescript
+  icon: 'icon.svg'
+  ```
+</ParamField>
+
+<ParamField path="readme" type="string" optional>
+  Path to readme/documentation file.
+  
+  ```typescript
+  readme: 'hub.md'
+  ```
+</ParamField>
+
+<ParamField path="configuration" type="ConfigurationDefinition" optional>
+  Primary configuration schema.
+  
+  ```typescript
+  configuration: {
+    schema: z.object({
+      apiKey: z.string().title('API Key'),
+      webhookSecret: z.string().title('Webhook Secret')
+    }),
+    identifier: {
+      required: true,
+      linkTemplateScript: 'https://platform.com/apps/{{ctx.configuration.appId}}'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="configurations" type="object" optional>
+  Multiple configuration types for different authentication methods.
+  
+  ```typescript
+  configurations: {
+    apiKey: {
+      title: 'API Key Authentication',
+      schema: z.object({
+        apiKey: z.string()
+      })
+    },
+    oauth: {
+      title: 'OAuth Authentication',
+      schema: z.object({
+        clientId: z.string(),
+        clientSecret: z.string(),
+        refreshToken: z.string()
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="channels" type="object" optional>
+  Channel definitions for message-based communication.
+  
+  ```typescript
+  channels: {
+    channel: {
+      title: 'Default Channel',
+      messages: {
+        text: {
+          schema: z.object({
+            text: z.string()
+          })
+        },
+        image: {
+          schema: z.object({
+            imageUrl: z.string().url(),
+            caption: z.string().optional()
+          })
+        }
+      },
+      message: {
+        tags: {
+          id: { title: 'Message ID' },
+          threadId: { title: 'Thread ID' }
+        }
+      },
+      conversation: {
+        tags: {
+          channelId: { title: 'Channel ID' },
+          workspace: { title: 'Workspace' }
+        }
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="actions" type="object" optional>
+  Action definitions that bots can call.
+  
+  ```typescript
+  actions: {
+    sendMessage: {
+      title: 'Send Message',
+      description: 'Send a message to a channel',
+      input: {
+        schema: z.object({
+          channelId: z.string(),
+          text: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          messageId: z.string(),
+          timestamp: z.string()
+        })
+      },
+      billable: true,
+      cacheable: false
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="events" type="object" optional>
+  Event definitions the integration can emit.
+  
+  ```typescript
+  events: {
+    messageReceived: {
+      title: 'Message Received',
+      schema: z.object({
+        channelId: z.string(),
+        userId: z.string(),
+        text: z.string(),
+        timestamp: z.string()
+      }),
+      attributes: {
+        category: 'messaging'
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="states" type="object" optional>
+  State definitions for integration, conversation, or user state.
+  
+  ```typescript
+  states: {
+    connectionStatus: {
+      type: 'integration',
+      schema: z.object({
+        connected: z.boolean(),
+        lastSync: z.string().datetime()
+      })
+    },
+    threadContext: {
+      type: 'conversation',
+      schema: z.object({
+        threadId: z.string(),
+        participants: z.array(z.string())
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="user" type="UserDefinition" optional>
+  User-level configuration and tags.
+  
+  ```typescript
+  user: {
+    tags: {
+      slackUserId: { title: 'Slack User ID' },
+      displayName: { title: 'Display Name' }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="secrets" type="object" optional>
+  Secret definitions for sensitive configuration.
+  
+  ```typescript
+  secrets: {
+    API_KEY: {
+      description: 'API key for authentication',
+      optional: false
+    },
+    WEBHOOK_SECRET: {
+      description: 'Secret for webhook verification',
+      optional: true
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="entities" type="object" optional>
+  Entity definitions for structured data.
+  
+  ```typescript
+  entities: {
+    slackUser: {
+      title: 'Slack User',
+      description: 'A user in Slack workspace',
+      schema: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string().email(),
+        isBot: z.boolean()
+      })
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="attributes" type="object" optional>
+  Custom metadata attributes.
+  
+  ```typescript
+  attributes: {
+    category: 'Messaging',
+    platform: 'Slack',
+    deprecated: 'false'
+  }
+  ```
+</ParamField>
+
+## Type Definitions
+
+### ConfigurationDefinition
+
+```typescript
+type ConfigurationDefinition<TConfig> = {
+  schema: TConfig
+  identifier?: {
+    required?: boolean
+    linkTemplateScript?: string
+  }
+}
+```
+
+### ChannelDefinition
+
+```typescript
+type ChannelDefinition<TChannel> = {
+  title?: string
+  description?: string
+  messages: {
+    [MessageType: string]: MessageDefinition
+  }
+  message?: {
+    tags?: Record<string, TagDefinition>
+  }
+  conversation?: {
+    tags?: Record<string, TagDefinition>
+  }
+}
+```
+
+### MessageDefinition
+
+```typescript
+type MessageDefinition<TMessage> = {
+  schema: TMessage
+}
+```
+
+### ActionDefinition
+
+```typescript
+type ActionDefinition<TAction> = {
+  title?: string
+  description?: string
+  input: { schema: TAction }
+  output: { schema: ZuiObjectSchema }
+  billable?: boolean
+  cacheable?: boolean
+  attributes?: Record<string, string>
+}
+```
+
+### EventDefinition
+
+```typescript
+type EventDefinition<TEvent> = {
+  title?: string
+  description?: string
+  schema: TEvent
+  attributes?: Record<string, string>
+}
+```
+
+### StateDefinition
+
+```typescript
+type StateType = 'integration' | 'conversation' | 'user'
+
+type StateDefinition<TState> = {
+  type: StateType
+  schema: TState
+}
+```
+
+### EntityDefinition
+
+```typescript
+type EntityDefinition<TEntity> = {
+  title?: string
+  description?: string
+  schema: TEntity
+}
+```
+
+## Methods
+
+### extend
+
+Extend an interface with custom entity mappings and overrides.
+
+```typescript
+extend<P extends InterfacePackage>(
+  interfacePkg: P,
+  builder: ExtensionBuilder
+): this
+```
+
+**Example:**
+
+```typescript
+import { IntegrationDefinition } from '@botpress/sdk'
+import storageInterface from '@botpress/interface-storage'
+
+const integration = new IntegrationDefinition({
+  name: 's3-integration',
+  version: '1.0.0',
+  entities: {
+    s3File: {
+      schema: z.object({
+        key: z.string(),
+        bucket: z.string(),
+        size: z.number(),
+        url: z.string().url()
+      })
+    }
+  }
+}).extend(storageInterface, ({ entities }) => ({
+  // Map interface entities to integration entities
+  entities: {
+    file: entities.s3File
+  },
+  // Override action properties
+  actions: {
+    uploadFile: {
+      name: 'uploadToS3',
+      title: 'Upload to S3'
+    }
+  }
+}))
+```
+
+## Properties
+
+<ResponseField name="metadata" type="object">
+  Integration metadata including SDK version.
+  
+  ```typescript
+  {
+    sdkVersion: string
+  }
+  ```
+</ResponseField>
+
+## Complete Example
+
+```typescript integration.definition.ts
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'github',
+  version: '2.0.0',
+  title: 'GitHub Integration',
+  description: 'Connect your bot to GitHub repositories',
+  icon: 'icon.svg',
+  readme: 'hub.md',
+  
+  // Configuration schemas
+  configuration: {
+    schema: z.object({
+      personalAccessToken: z.string().title('Personal Access Token'),
+      webhookSecret: z.string().title('Webhook Secret')
+    })
+  },
+  
+  configurations: {
+    oauth: {
+      title: 'OAuth App',
+      schema: z.object({
+        clientId: z.string().title('Client ID'),
+        clientSecret: z.string().title('Client Secret'),
+        webhookSecret: z.string().title('Webhook Secret')
+      })
+    },
+    githubApp: {
+      title: 'GitHub App',
+      schema: z.object({
+        appId: z.string().title('App ID'),
+        privateKey: z.string().title('Private Key'),
+        webhookSecret: z.string().title('Webhook Secret')
+      })
+    }
+  },
+  
+  // Channels
+  channels: {
+    issue: {
+      title: 'GitHub Issues',
+      messages: {
+        comment: {
+          schema: z.object({
+            body: z.string()
+          })
+        }
+      },
+      conversation: {
+        tags: {
+          issueNumber: { title: 'Issue Number' },
+          repository: { title: 'Repository' }
+        }
+      },
+      message: {
+        tags: {
+          commentId: { title: 'Comment ID' }
+        }
+      }
+    }
+  },
+  
+  // Actions
+  actions: {
+    createIssue: {
+      title: 'Create Issue',
+      description: 'Create a new GitHub issue',
+      input: {
+        schema: z.object({
+          repository: z.string(),
+          title: z.string(),
+          body: z.string(),
+          labels: z.array(z.string()).optional()
+        })
+      },
+      output: {
+        schema: z.object({
+          issueNumber: z.number(),
+          issueUrl: z.string().url()
+        })
+      },
+      billable: true
+    },
+    addComment: {
+      title: 'Add Comment',
+      input: {
+        schema: z.object({
+          repository: z.string(),
+          issueNumber: z.number(),
+          body: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          commentId: z.number()
+        })
+      }
+    }
+  },
+  
+  // Events
+  events: {
+    issueOpened: {
+      title: 'Issue Opened',
+      schema: z.object({
+        repository: z.string(),
+        issueNumber: z.number(),
+        title: z.string(),
+        body: z.string(),
+        author: z.string()
+      })
+    },
+    commentCreated: {
+      title: 'Comment Created',
+      schema: z.object({
+        repository: z.string(),
+        issueNumber: z.number(),
+        commentId: z.number(),
+        body: z.string(),
+        author: z.string()
+      })
+    }
+  },
+  
+  // States
+  states: {
+    repositoryWatch: {
+      type: 'integration',
+      schema: z.object({
+        repositories: z.array(z.string()),
+        lastSync: z.string().datetime()
+      })
+    }
+  },
+  
+  // User tags
+  user: {
+    tags: {
+      githubUsername: { title: 'GitHub Username' },
+      githubUserId: { title: 'GitHub User ID' }
+    }
+  },
+  
+  // Entities
+  entities: {
+    repository: {
+      title: 'GitHub Repository',
+      schema: z.object({
+        id: z.number(),
+        name: z.string(),
+        fullName: z.string(),
+        private: z.boolean(),
+        url: z.string().url()
+      })
+    },
+    issue: {
+      title: 'GitHub Issue',
+      schema: z.object({
+        id: z.number(),
+        number: z.number(),
+        title: z.string(),
+        body: z.string(),
+        state: z.enum(['open', 'closed']),
+        labels: z.array(z.string())
+      })
+    }
+  },
+  
+  attributes: {
+    category: 'Development Tools'
+  }
+})
+```
+
+## See Also
+
+- [IntegrationImplementation](/sdk/integration/implementation) - Implement integration handlers
+- [IntegrationSpecificClient](/sdk/integration/client) - Type-safe API client
+- [IntegrationContext](/sdk/integration/context) - Runtime context API

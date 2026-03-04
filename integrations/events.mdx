@@ -1,0 +1,46 @@
+---
+title: Events  
+description: Emit events from your integration to notify bots of external changes
+---
+
+Events notify bots when something happens in the external platform.
+
+## Define events
+
+```typescript integration.definition.ts
+export default new IntegrationDefinition({
+  events: {
+    messageReceived: {
+      title: 'Message Received',
+      description: 'Triggered when a message is received',
+      schema: z.object({
+        userId: z.string(),
+        text: z.string(),
+        timestamp: z.string(),
+      }),
+    },
+  },
+})
+```
+
+## Emit events
+
+```typescript src/index.ts
+const integration = new bp.Integration({
+  handler: async ({ req, client }) => {
+    const event = req.body
+    
+    await client.createEvent({
+      type: 'messageReceived',
+      payload: {
+        userId: event.user_id,
+        text: event.text,
+        timestamp: new Date().toISOString(),
+      },
+    })
+    
+    return { status: 200 }
+  },
+  // ...
+})
+```

@@ -1,0 +1,363 @@
+---
+title: IntegrationImplementation
+description: Implement integration webhooks, actions, and channel handlers
+---
+
+The `IntegrationImplementation` class (exported as `Integration`) implements the runtime behavior of an integration, including webhooks, action handlers, and channel message handlers.
+
+## Constructor
+
+```typescript
+import { Integration } from '@botpress/sdk'
+import definition from './integration.definition'
+
+export default new Integration({
+  definition,
+  register: async ({ ctx, client, logger }) => {
+    // Registration logic
+  },
+  unregister: async ({ ctx, client, logger }) => {
+    // Cleanup logic
+  },
+  handler: async ({ req, ctx, client, logger }) => {
+    // Webhook handler
+  },
+  actions: {
+    // Action implementations
+  },
+  channels: {
+    // Channel message handlers
+  }
+})
+```
+
+## IntegrationImplementationProps
+
+<ParamField path="register" type="function" required>
+  Called when the integration is registered to a bot.
+  
+  ```typescript
+  register: async ({ ctx, client, logger, webhookUrl }) => {
+    logger.forBot().info('Registering integration')
+    
+    // Configure external platform webhook
+    await registerWebhook({
+      url: webhookUrl,
+      secret: ctx.configuration.webhookSecret
+    })
+  }
+  ```
+</ParamField>
+
+<ParamField path="unregister" type="function" required>
+  Called when the integration is removed from a bot.
+  
+  ```typescript
+  unregister: async ({ ctx, client, logger }) => {
+    logger.forBot().info('Unregistering integration')
+    
+    // Clean up webhooks and resources
+    await removeWebhook(ctx.configuration.webhookId)
+  }
+  ```
+</ParamField>
+
+<ParamField path="handler" type="function" required>
+  Main webhook handler for incoming requests from the external platform.
+  
+  ```typescript
+  handler: async ({ req, ctx, client, logger }) => {
+    // Verify webhook signature
+    const signature = req.headers['x-webhook-signature']
+    if (!verifySignature(req.body, signature, ctx.configuration.secret)) {
+      return {
+        status: 401,
+        body: 'Invalid signature'
+      }
+    }
+    
+    const payload = JSON.parse(req.body)
+    
+    // Handle different webhook events
+    if (payload.type === 'message') {
+      await handleIncomingMessage(payload, client, logger)
+    }
+    
+    return { status: 200 }
+  }
+  ```
+</ParamField>
+
+<ParamField path="actions" type="object" required>
+  Action handler implementations.
+  
+  ```typescript
+  actions: {
+    sendMessage: async ({ input, ctx, client, logger }) => {
+      const result = await externalAPI.sendMessage({
+        channel: input.channelId,
+        text: input.text,
+        apiKey: ctx.configuration.apiKey
+      })
+      
+      return {
+        messageId: result.id,
+        timestamp: result.ts
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="channels" type="object" required>
+  Channel message handlers for outgoing messages.
+  
+  ```typescript
+  channels: {
+    channel: {
+      messages: {
+        text: async ({ payload, ctx, client, logger, conversation, ack }) => {
+          const result = await externalAPI.postMessage({
+            channel: conversation.tags.channelId,
+            text: payload.text
+          })
+          
+          // Acknowledge message sent
+          await ack({
+            tags: {
+              messageId: result.id
+            }
+          })
+        }
+      }
+    }
+  }
+  ```
+</ParamField>
+
+## Handler Props
+
+All handlers receive props with these common fields:
+
+<ResponseField name="ctx" type="IntegrationContext">
+  Integration context with configuration and IDs.
+  
+  ```typescript
+  {
+    botId: string
+    botUserId: string
+    integrationId: string
+    integrationAlias: string
+    webhookId: string
+    operation: string
+    configuration: /* your config schema */
+    configurationType: string | null
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="client" type="IntegrationSpecificClient">
+  Type-safe API client for integration operations.
+</ResponseField>
+
+<ResponseField name="logger" type="IntegrationLogger">
+  Logger instance.
+  
+  ```typescript
+  logger.forBot().info('Message')
+  logger.forBot().error('Error', error)
+  ```
+</ResponseField>
+
+## Complete Example
+
+```typescript index.ts
+import { Integration, RuntimeError } from '@botpress/sdk'
+import crypto from 'crypto'
+import definition from './integration.definition'
+import * as bp from '.botpress'
+
+type SlackAPI = {
+  postMessage: (args: any) => Promise<any>
+  updateWebhook: (args: any) => Promise<any>
+}
+
+const createSlackClient = (token: string): SlackAPI => {
+  // Initialize Slack API client
+  return {
+    postMessage: async (args) => { /* ... */ },
+    updateWebhook: async (args) => { /* ... */ }
+  }
+}
+
+export default new Integration({
+  definition,
+  
+  register: async ({ ctx, client, logger, webhookUrl }) => {
+    logger.forBot().info('Registering Slack integration')
+    
+    const slack = createSlackClient(ctx.configuration.botToken)
+    
+    try {
+      // Configure Slack webhook
+      const result = await slack.updateWebhook({
+        url: webhookUrl,
+        events: ['message', 'reaction_added']
+      })
+      
+      // Store webhook ID in integration state
+      await client.setState({
+        type: 'integration',
+        name: 'webhook',
+        id: ctx.integrationId,
+        payload: {
+          webhookId: result.id
+        }
+      })
+      
+      logger.forBot().info('Slack integration registered')
+    } catch (error) {
+      throw new RuntimeError('Failed to register webhook', error)
+    }
+  },
+  
+  unregister: async ({ ctx, client, logger }) => {
+    logger.forBot().info('Unregistering Slack integration')
+    
+    const { state } = await client.getState({
+      type: 'integration',
+      name: 'webhook',
+      id: ctx.integrationId
+    })
+    
+    if (state.payload.webhookId) {
+      // Remove webhook from Slack
+      const slack = createSlackClient(ctx.configuration.botToken)
+      await slack.updateWebhook({ id: state.payload.webhookId, enabled: false })
+    }
+  },
+  
+  handler: async ({ req, ctx, client, logger }) => {
+    // Verify Slack signature
+    const signature = req.headers['x-slack-signature'] as string
+    const timestamp = req.headers['x-slack-request-timestamp'] as string
+    
+    const expectedSignature = crypto
+      .createHmac('sha256', ctx.configuration.signingSecret)
+      .update(`v0:${timestamp}:${req.body}`)
+      .digest('hex')
+    
+    if (`v0=${expectedSignature}` !== signature) {
+      return { status: 401, body: 'Invalid signature' }
+    }
+    
+    const payload = JSON.parse(req.body)
+    
+    // Handle URL verification
+    if (payload.type === 'url_verification') {
+      return {
+        status: 200,
+        body: JSON.stringify({ challenge: payload.challenge })
+      }
+    }
+    
+    // Handle message events
+    if (payload.event?.type === 'message' && !payload.event.bot_id) {
+      const { conversation } = await client.getOrCreateConversation({
+        channel: 'channel',
+        tags: {
+          channelId: payload.event.channel
+        }
+      })
+      
+      const { user } = await client.getOrCreateUser({
+        tags: {
+          slackUserId: payload.event.user
+        }
+      })
+      
+      await client.createMessage({
+        type: 'text',
+        conversationId: conversation.id,
+        userId: user.id,
+        payload: {
+          text: payload.event.text
+        },
+        tags: {
+          messageId: payload.event.ts
+        }
+      })
+    }
+    
+    return { status: 200 }
+  },
+  
+  actions: {
+    sendMessage: async ({ input, ctx, client, logger, metadata }) => {
+      logger.forBot().info('Sending Slack message')
+      
+      const slack = createSlackClient(ctx.configuration.botToken)
+      
+      const result = await slack.postMessage({
+        channel: input.channelId,
+        text: input.text
+      })
+      
+      // Track billable action
+      metadata.setCost(1)
+      
+      return {
+        messageId: result.ts,
+        timestamp: result.ts
+      }
+    }
+  },
+  
+  channels: {
+    channel: {
+      messages: {
+        text: async ({ payload, ctx, client, logger, conversation, message, user, ack }) => {
+          logger.forBot().info('Sending text message to Slack')
+          
+          const slack = createSlackClient(ctx.configuration.botToken)
+          
+          const result = await slack.postMessage({
+            channel: conversation.tags.channelId,
+            text: payload.text,
+            thread_ts: message.tags.threadId
+          })
+          
+          // Acknowledge message delivery
+          await ack({
+            tags: {
+              messageId: result.ts
+            }
+          })
+        },
+        
+        image: async ({ payload, ctx, client, conversation, ack }) => {
+          const slack = createSlackClient(ctx.configuration.botToken)
+          
+          const result = await slack.postMessage({
+            channel: conversation.tags.channelId,
+            text: payload.caption || 'Image',
+            attachments: [{
+              image_url: payload.imageUrl
+            }]
+          })
+          
+          await ack({
+            tags: { messageId: result.ts }
+          })
+        }
+      }
+    }
+  }
+})
+```
+
+## See Also
+
+- [IntegrationDefinition](/sdk/integration/definition) - Define integration structure
+- [IntegrationSpecificClient](/sdk/integration/client) - API client reference
+- [IntegrationContext](/sdk/integration/context) - Runtime context

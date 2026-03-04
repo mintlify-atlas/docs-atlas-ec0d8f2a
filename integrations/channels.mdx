@@ -1,0 +1,80 @@
+---
+title: Channels
+description: Implement messaging channels in your integration
+---
+
+Channels enable bidirectional communication between bots and external platforms.
+
+## Define channels
+
+Define channels in your integration definition:
+
+```typescript integration.definition.ts
+export default new IntegrationDefinition({
+  channels: {
+    channel: {
+      title: 'Main Channel',
+      description: 'Primary communication channel',
+      messages: {
+        text: {
+          schema: z.object({
+            text: z.string().min(1),
+          }),
+        },
+        image: {
+          schema: z.object({
+            imageUrl: z.string().url(),
+            title: z.string().optional(),
+          }),
+        },
+      },
+      message: {
+        tags: {
+          id: { title: 'Message ID' },
+          threadId: { title: 'Thread ID' },
+        },
+      },
+      conversation: {
+        tags: {
+          channel: { title: 'Channel Name' },
+        },
+      },
+    },
+  },
+})
+```
+
+## Implement channel handlers
+
+```typescript src/channels.ts
+import type { ChannelHandlers } from '.botpress/implementation'
+
+const channels: ChannelHandlers = {
+  channel: {
+    messages: {
+      text: async ({ payload, ctx, conversation, ack, logger }) => {
+        const config = JSON.parse(ctx.configuration.payload)
+        
+        const response = await fetch(`${config.apiUrl}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            channel: conversation.tags.channel,
+            text: payload.text,
+          }),
+        })
+        
+        const data = await response.json()
+        
+        await ack({
+          tags: { id: data.messageId },
+        })
+      },
+    },
+  },
+}
+
+export default channels
+```

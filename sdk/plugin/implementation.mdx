@@ -1,0 +1,311 @@
+---
+title: PluginImplementation
+description: Implement plugin actions and event handlers
+---
+
+The `PluginImplementation` class (exported as `Plugin`) implements the runtime behavior of a plugin, including action handlers and event/message handlers.
+
+## Constructor
+
+```typescript
+import { Plugin } from '@botpress/sdk'
+import definition from './plugin.definition'
+
+export default new Plugin({
+  definition,
+  
+  actions: {
+    // Action implementations
+  },
+  
+  on: (plugin) => {
+    // Register event and message handlers
+  }
+})
+```
+
+## PluginImplementationProps
+
+<ParamField path="actions" type="object" required>
+  Action handler implementations.
+  
+  ```typescript
+  actions: {
+    trackEvent: async ({ input, configuration, client }) => {
+      if (!configuration.enabled) {
+        return { tracked: false }
+      }
+      
+      // Track event via interface
+      const eventId = await interfaces.analytics.track({
+        event: input.event,
+        userId: input.userId,
+        properties: input.properties
+      })
+      
+      return {
+        tracked: true,
+        eventId
+      }
+    }
+  }
+  ```
+</ParamField>
+
+## Handler Registration
+
+Plugins can register handlers for messages, events, and hooks:
+
+```typescript
+export default new Plugin({
+  definition,
+  actions: {},
+  on: (plugin) => {
+    // Message handlers
+    plugin.message('*', async ({ message, configuration, client, logger }) => {
+      if (!configuration.enabled) return
+      
+      logger.forBot().debug('Message received:', message.type)
+      
+      await client.createEvent({
+        type: 'analytics#eventTracked',
+        payload: {
+          eventName: 'message_received',
+          userId: message.userId,
+          properties: { type: message.type },
+          timestamp: new Date().toISOString()
+        }
+      })
+    })
+    
+    // Event handlers
+    plugin.event('*', async ({ event, states, client }) => {
+      // Update analytics state
+      const { state } = await states.analytics.get({
+        id: event.botId
+      })
+      
+      await states.analytics.set({
+        id: event.botId,
+        payload: {
+          ...state.payload,
+          totalEvents: state.payload.totalEvents + 1
+        }
+      })
+    })
+    
+    // Hook handlers
+    plugin.afterIncomingMessage('*', async ({ data, configuration }) => {
+      // Track message analytics
+      return { data }
+    })
+  }
+})
+```
+
+## Handler Props
+
+Plugin handlers receive special props:
+
+<ResponseField name="configuration" type="object">
+  Plugin configuration values (typed).
+</ResponseField>
+
+<ResponseField name="interfaces" type="object">
+  Interface client proxies.
+</ResponseField>
+
+<ResponseField name="integrations" type="object">
+  Integration client proxies.
+</ResponseField>
+
+<ResponseField name="alias" type="string">
+  Plugin alias in the bot.
+</ResponseField>
+
+<ResponseField name="states" type="StateProxy">
+  Type-safe state access.
+</ResponseField>
+
+<ResponseField name="actions" type="ActionProxy">
+  Type-safe action calls.
+</ResponseField>
+
+<ResponseField name="events" type="EventProxy">
+  Type-safe event creation.
+</ResponseField>
+
+<ResponseField name="workflows" type="WorkflowProxy">
+  Workflow management.
+</ResponseField>
+
+<ResponseField name="users" type="UserFinder">
+  User operations.
+</ResponseField>
+
+<ResponseField name="conversations" type="ConversationFinder">
+  Conversation operations.
+</ResponseField>
+
+<ResponseField name="messages" type="MessageProxy">
+  Message operations.
+</ResponseField>
+
+## Complete Example
+
+```typescript index.ts
+import { Plugin } from '@botpress/sdk'
+import definition from './plugin.definition'
+
+export default new Plugin({
+  definition,
+  
+  // Implement actions
+  actions: {
+    trackEvent: async ({ input, configuration, interfaces, states, client, logger }) => {
+      if (!configuration.enabled) {
+        return { tracked: false }
+      }
+      
+      // Check sample rate
+      if (Math.random() > configuration.sampleRate) {
+        return { tracked: false }
+      }
+      
+      // Check exclude list
+      if (configuration.excludeEvents?.includes(input.event)) {
+        return { tracked: false }
+      }
+      
+      logger.forBot().info('Tracking event:', input.event)
+      
+      // Track via analytics interface
+      const eventId = await interfaces.analytics.trackEvent({
+        event: input.event,
+        userId: input.userId,
+        properties: input.properties || {}
+      })
+      
+      // Update user session state
+      const { state: session } = await states.userSession.get({
+        id: input.userId
+      })
+      
+      await states.userSession.set({
+        id: input.userId,
+        payload: {
+          ...session.payload,
+          eventCount: session.payload.eventCount + 1
+        }
+      })
+      
+      // Emit event
+      await client.createEvent({
+        type: 'analytics#eventTracked',
+        payload: {
+          eventName: input.event,
+          userId: input.userId,
+          properties: input.properties || {},
+          timestamp: new Date().toISOString()
+        }
+      })
+      
+      return {
+        tracked: true,
+        eventId
+      }
+    },
+    
+    getStats: async ({ input, states }) => {
+      const { state } = await states.analytics.get({
+        id: 'global'
+      })
+      
+      return {
+        totalEvents: state.payload.totalEvents,
+        period: `since ${state.payload.lastReset}`
+      }
+    }
+  },
+  
+  // Register handlers
+  on: (plugin) => {
+    // Track all messages
+    plugin.message('*', async ({ message, configuration, actions, logger }) => {
+      if (!configuration.enabled) return
+      
+      logger.forBot().debug('Tracking message')
+      
+      await actions.trackEvent({
+        event: 'message_received',
+        userId: message.userId,
+        properties: {
+          type: message.type,
+          conversationId: message.conversationId
+        }
+      })
+    })
+    
+    // Track custom events
+    plugin.event('orderPlaced', async ({ event, actions, logger }) => {
+      logger.forBot().info('Order placed, tracking...')
+      
+      await actions.trackEvent({
+        event: 'order_placed',
+        userId: event.payload.userId,
+        properties: {
+          orderId: event.payload.orderId,
+          amount: event.payload.amount
+        }
+      })
+    })
+    
+    // Track interface events
+    plugin.event('analytics:itemCreated', async ({ event, logger }) => {
+      logger.forBot().info('Item created via interface')
+    })
+    
+    // Before hooks for enrichment
+    plugin.beforeIncomingMessage('*', async ({ data, users, configuration }) => {
+      if (!configuration.enabled) {
+        return { data }
+      }
+      
+      // Enrich with user segment
+      const user = await users.get(data.userId)
+      
+      return {
+        data: {
+          ...data,
+          tags: {
+            ...data.tags,
+            segment: user.tags.segment
+          }
+        }
+      }
+    })
+    
+    // After hooks for tracking
+    plugin.afterIncomingMessage('*', async ({ data, actions, configuration }) => {
+      if (!configuration.enabled) {
+        return { data }
+      }
+      
+      await actions.trackEvent({
+        event: 'message_processed',
+        userId: data.userId,
+        properties: {
+          type: data.type
+        }
+      })
+      
+      return { data }
+    })
+  }
+})
+```
+
+## See Also
+
+- [PluginDefinition](/sdk/plugin/definition) - Define plugin structure
+- [BotDefinition](/sdk/bot/definition) - Add plugins to bots

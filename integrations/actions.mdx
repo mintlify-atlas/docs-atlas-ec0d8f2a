@@ -1,0 +1,58 @@
+---
+title: Actions
+description: Create actions to expose integration functionality to bots
+---
+
+Actions allow bots to call integration functionality and interact with external APIs.
+
+## Define actions
+
+```typescript integration.definition.ts
+export default new IntegrationDefinition({
+  actions: {
+    sendMessage: {
+      title: 'Send Message',
+      description: 'Send a message to external platform',
+      input: {
+        schema: z.object({
+          channel: z.string(),
+          text: z.string(),
+        }),
+      },
+      output: {
+        schema: z.object({
+          messageId: z.string(),
+          success: z.boolean(),
+        }),
+      },
+    },
+  },
+})
+```
+
+## Implement actions
+
+```typescript src/actions/send-message.ts
+import type { ActionHandlers } from '.botpress/implementation'
+
+export const sendMessage: ActionHandlers['sendMessage'] = async ({
+  input,
+  ctx,
+  logger,
+}) => {
+  const config = JSON.parse(ctx.configuration.payload)
+  
+  const response = await fetch(`${config.apiUrl}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${config.apiKey}` },
+    body: JSON.stringify(input),
+  })
+  
+  const data = await response.json()
+  
+  return {
+    messageId: data.id,
+    success: true,
+  }
+}
+```

@@ -1,0 +1,68 @@
+---
+title: Plugins overview
+description: Extend bot functionality with reusable plugins
+---
+
+Plugins add reusable functionality to bots, including actions, events, states, and handlers.
+
+## What are plugins?
+
+Plugins are packages that:
+- Add actions to bots
+- Define custom events
+- Manage state
+- Register message and event handlers
+- Depend on integrations or interfaces
+
+## Plugin structure
+
+```
+my-plugin/
+├── src/
+│   └── index.ts
+├── plugin.definition.ts
+├── package.json
+└── tsconfig.json
+```
+
+## Define plugin
+
+```typescript plugin.definition.ts
+import { PluginDefinition, z } from '@botpress/sdk'
+
+export default new PluginDefinition({
+  name: 'workspace/my-plugin',
+  version: '1.0.0',
+  title: 'My Plugin',
+  
+  configuration: {
+    schema: z.object({
+      logLevel: z.enum(['debug', 'info', 'warn', 'error']),
+    }),
+  },
+  
+  actions: {
+    logMessage: {
+      input: { schema: z.object({ message: z.string() }) },
+      output: { schema: z.object({ logged: z.boolean() }) },
+    },
+  },
+})
+```
+
+## Implement plugin
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const plugin = new bp.Plugin({
+  actions: {
+    logMessage: async ({ input, logger }) => {
+      logger.info(input.message)
+      return { logged: true }
+    },
+  },
+})
+
+export default plugin
+```

@@ -1,0 +1,336 @@
+---
+title: Botpress Client
+description: Standalone API client for Botpress Cloud
+---
+
+The `@botpress/client` package provides a standalone HTTP client for interacting with the Botpress Cloud API. Use it to manage bots, integrations, conversations, messages, and users from any Node.js or browser environment.
+
+## Installation
+
+```bash npm
+npm install @botpress/client
+```
+
+```bash yarn
+yarn add @botpress/client
+```
+
+## Initialization
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  apiUrl: 'https://api.botpress.cloud',
+  token: process.env.BOTPRESS_TOKEN,
+  workspaceId: process.env.BOTPRESS_WORKSPACE_ID,
+  botId: process.env.BOTPRESS_BOT_ID
+})
+```
+
+### Configuration Options
+
+<ParamField path="apiUrl" type="string" default="https://api.botpress.cloud">
+  Botpress API base URL.
+</ParamField>
+
+<ParamField path="token" type="string" required>
+  Authentication token (Personal Access Token or Bot token).
+</ParamField>
+
+<ParamField path="workspaceId" type="string" optional>
+  Default workspace ID for operations.
+</ParamField>
+
+<ParamField path="botId" type="string" optional>
+  Default bot ID for operations.
+</ParamField>
+
+<ParamField path="integrationId" type="string" optional>
+  Default integration ID for operations.
+</ParamField>
+
+## Client Types
+
+The client is exported from different modules:
+
+### Public Client
+
+For bot and integration runtime:
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  token: botToken
+})
+```
+
+### Runtime Client
+
+For internal runtime operations:
+
+```typescript
+import { Client } from '@botpress/client/runtime'
+
+const runtimeClient = new Client({
+  token: runtimeToken
+})
+```
+
+### Admin Client
+
+For workspace and bot management:
+
+```typescript
+import { Client } from '@botpress/client/admin'
+
+const adminClient = new Client({
+  token: personalAccessToken
+})
+```
+
+## Basic Usage
+
+### Create a Conversation
+
+```typescript
+const { conversation } = await client.createConversation({
+  integrationId: 'integration-id'
+})
+
+console.log('Conversation ID:', conversation.id)
+```
+
+### Send a Message
+
+```typescript
+const { message } = await client.createMessage({
+  conversationId: conversation.id,
+  userId: user.id,
+  type: 'text',
+  payload: {
+    text: 'Hello, world!'
+  }
+})
+
+console.log('Message ID:', message.id)
+```
+
+### Get a User
+
+```typescript
+const { user } = await client.getUser({
+  id: 'user-id'
+})
+
+console.log('User:', user)
+```
+
+### List Messages
+
+```typescript
+const { messages, meta } = await client.listMessages({
+  conversationId: conversation.id,
+  limit: 50
+})
+
+console.log('Messages:', messages.length)
+if (meta.nextToken) {
+  // Fetch next page
+}
+```
+
+## Operations
+
+The client provides methods for:
+
+### Conversations
+
+- `createConversation()` - Create a conversation
+- `getConversation()` - Get conversation by ID
+- `listConversations()` - List conversations
+- `updateConversation()` - Update conversation
+- `deleteConversation()` - Delete conversation
+- `getOrCreateConversation()` - Get or create conversation
+
+### Messages
+
+- `createMessage()` - Send a message
+- `getMessage()` - Get message by ID
+- `listMessages()` - List messages
+- `updateMessage()` - Update message
+- `deleteMessage()` - Delete message
+- `getOrCreateMessage()` - Get or create message
+
+### Users
+
+- `createUser()` - Create a user
+- `getUser()` - Get user by ID
+- `listUsers()` - List users
+- `updateUser()` - Update user
+- `deleteUser()` - Delete user
+- `getOrCreateUser()` - Get or create user
+
+### Events
+
+- `createEvent()` - Create an event
+- `getEvent()` - Get event by ID
+- `listEvents()` - List events
+
+### State
+
+- `getState()` - Get state
+- `setState()` - Set state
+- `getOrSetState()` - Get or set state
+- `patchState()` - Partially update state
+
+### Actions
+
+- `callAction()` - Execute an integration action
+
+### Files
+
+- `uploadFile()` - Upload a file
+- `getFile()` - Get file metadata
+- `listFiles()` - List files
+- `deleteFile()` - Delete a file
+- `upsertFile()` - Create or update file
+- `updateFileMetadata()` - Update file metadata
+- `searchFiles()` - Search files
+
+### Tables
+
+- `createTableRows()` - Insert rows
+- `getTableRow()` - Get a row
+- `findTableRows()` - Query rows
+- `updateTableRows()` - Update rows
+- `upsertTableRows()` - Insert or update rows
+- `deleteTableRows()` - Delete rows
+
+### Workflows
+
+- `createWorkflow()` - Create workflow
+- `getWorkflow()` - Get workflow
+- `updateWorkflow()` - Update workflow
+- `deleteWorkflow()` - Delete workflow
+- `listWorkflows()` - List workflows
+- `getOrCreateWorkflow()` - Get or create workflow
+
+### Participants
+
+- `addParticipant()` - Add participant to conversation
+- `getParticipant()` - Get participant
+- `listParticipants()` - List participants
+- `removeParticipant()` - Remove participant
+
+### Analytics
+
+- `trackAnalytics()` - Track analytics events
+
+## Error Handling
+
+```typescript
+import { isApiError, RuntimeError } from '@botpress/client'
+
+try {
+  const { user } = await client.getUser({ id: 'user-id' })
+} catch (error) {
+  if (isApiError(error)) {
+    console.error('API Error:', error.code, error.message)
+    console.error('Status:', error.status)
+  } else {
+    console.error('Unexpected error:', error)
+  }
+}
+```
+
+### Error Types
+
+<ResponseField name="isApiError" type="function">
+  Type guard for API errors.
+  
+  ```typescript
+  if (isApiError(error)) {
+    // error.code, error.message, error.status
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="RuntimeError" type="class">
+  SDK runtime error class.
+  
+  ```typescript
+  throw new RuntimeError('Operation failed', cause)
+  ```
+</ResponseField>
+
+## Pagination
+
+Many list operations support pagination:
+
+```typescript
+let nextToken: string | undefined
+const allMessages = []
+
+do {
+  const { messages, meta } = await client.listMessages({
+    conversationId: conversation.id,
+    limit: 100,
+    nextToken
+  })
+  
+  allMessages.push(...messages)
+  nextToken = meta.nextToken
+} while (nextToken)
+
+console.log('Total messages:', allMessages.length)
+```
+
+## Timeouts and Retries
+
+The client uses axios with retry logic:
+
+```typescript
+import { Client, axios, axiosRetry } from '@botpress/client'
+
+const client = new Client({
+  token: process.env.BOTPRESS_TOKEN
+})
+
+// Configure retries (done automatically by default)
+axiosRetry(axios, {
+  retries: 3,
+  retryDelay: axiosRetry.exponentialDelay
+})
+```
+
+## Environment Variables
+
+```bash .env
+BOTPRESS_API_URL=https://api.botpress.cloud
+BOTPRESS_TOKEN=bp_pat_your_token_here
+BOTPRESS_WORKSPACE_ID=your_workspace_id
+BOTPRESS_BOT_ID=your_bot_id
+```
+
+```typescript
+import { config } from 'dotenv'
+import { Client } from '@botpress/client'
+
+config()
+
+const client = new Client({
+  apiUrl: process.env.BOTPRESS_API_URL,
+  token: process.env.BOTPRESS_TOKEN!,
+  workspaceId: process.env.BOTPRESS_WORKSPACE_ID,
+  botId: process.env.BOTPRESS_BOT_ID
+})
+```
+
+## See Also
+
+- [Authentication](/sdk/client/authentication) - API authentication methods
+- [Client Methods](/sdk/client/methods) - Complete method reference
+- [BotSpecificClient](/sdk/bot/client) - Type-safe bot client
+- [IntegrationSpecificClient](/sdk/integration/client) - Type-safe integration client

@@ -1,0 +1,581 @@
+---
+title: BotImplementation
+description: Implement bot handlers, actions, and business logic
+---
+
+The `BotImplementation` class (exported as `Bot`) implements the runtime behavior of a bot, including event handlers, action implementations, and lifecycle hooks.
+
+## Constructor
+
+```typescript
+import { Bot } from '@botpress/sdk'
+import type { Client } from '.botpress'
+
+const bot = new Bot<typeof definition>({
+  actions: { /* action implementations */ },
+  plugins: { /* plugin implementations */ },
+  register: async (props) => { /* registration logic */ }
+})
+```
+
+## BotImplementationProps
+
+<ParamField path="actions" type="object" required>
+  Action handler implementations.
+  
+  ```typescript
+  actions: {
+    createTicket: async ({ input, client, ctx, logger }) => {
+      logger.forBot().info('Creating ticket:', input)
+      
+      const ticket = await createTicketInExternalSystem(input)
+      
+      return {
+        ticketId: ticket.id,
+        url: ticket.url
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="plugins" type="object" required>
+  Plugin implementation instances.
+  
+  ```typescript
+  plugins: {
+    analytics: analyticsPluginImpl,
+    storage: storagePluginImpl
+  }
+  ```
+</ParamField>
+
+<ParamField path="register" type="function" optional>
+  Registration handler called when bot is registered.
+  
+  ```typescript
+  register: async ({ ctx, client, logger }) => {
+    logger.forBot().info('Bot registered:', ctx.botId)
+    
+    // Initialize bot state
+    await client.setState({
+      type: 'bot',
+      name: 'config',
+      id: ctx.botId,
+      payload: { initialized: true }
+    })
+  }
+  ```
+</ParamField>
+
+## Handler Registration
+
+Use the `on` property to register event, message, and hook handlers:
+
+### Message Handlers
+
+Handle incoming messages from channels:
+
+```typescript
+import { Bot } from '@botpress/sdk'
+import definition from './bot.definition'
+
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    // Handle all messages
+    bot.message('*', async ({ message, client, logger }) => {
+      logger.forBot().info('Message received:', message.type)
+    })
+    
+    // Handle specific message type
+    bot.message('text', async ({ message, user, conversation, client }) => {
+      const text = message.payload.text
+      
+      await client.createMessage({
+        conversationId: conversation.id,
+        userId: user.id,
+        type: 'text',
+        payload: { text: `You said: ${text}` }
+      })
+    })
+  }
+})
+```
+
+**Handler Props:**
+
+<ResponseField name="message" type="Message">
+  The incoming message with type and payload.
+</ResponseField>
+
+<ResponseField name="user" type="User">
+  The user who sent the message.
+</ResponseField>
+
+<ResponseField name="conversation" type="Conversation">
+  The conversation containing the message.
+</ResponseField>
+
+<ResponseField name="event" type="Event">
+  The event that triggered the message.
+</ResponseField>
+
+<ResponseField name="client" type="BotSpecificClient">
+  Type-safe API client.
+</ResponseField>
+
+<ResponseField name="ctx" type="BotContext">
+  Bot context with configuration and IDs.
+</ResponseField>
+
+<ResponseField name="logger" type="BotLogger">
+  Logger instance for the bot.
+</ResponseField>
+
+<ResponseField name="workflows" type="WorkflowProxy">
+  **EXPERIMENTAL** - Workflow management API.
+</ResponseField>
+
+### Event Handlers
+
+Handle custom and integration events:
+
+```typescript
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    // Handle custom event
+    bot.event('issueCreated', async ({ event, client, logger }) => {
+      logger.forBot().info('Issue created:', event.payload.issueId)
+      
+      // Create notification
+      await client.createEvent({
+        type: 'notificationSent',
+        payload: {
+          issueId: event.payload.issueId,
+          sentAt: new Date().toISOString()
+        }
+      })
+    })
+    
+    // Handle integration event (with alias prefix)
+    bot.event('github:issueOpened', async ({ event, client }) => {
+      const issue = event.payload
+      
+      await client.createMessage({
+        conversationId: 'default-conversation',
+        userId: 'bot-user',
+        type: 'text',
+        payload: {
+          text: `New issue: ${issue.title}`
+        }
+      })
+    })
+    
+    // Handle all events
+    bot.event('*', async ({ event, logger }) => {
+      logger.forBot().debug('Event received:', event.type)
+    })
+  }
+})
+```
+
+**Handler Props:**
+
+<ResponseField name="event" type="Event">
+  The event with type and payload.
+</ResponseField>
+
+<ResponseField name="client" type="BotSpecificClient">
+  Type-safe API client.
+</ResponseField>
+
+<ResponseField name="ctx" type="BotContext">
+  Bot context.
+</ResponseField>
+
+<ResponseField name="logger" type="BotLogger">
+  Logger instance.
+</ResponseField>
+
+<ResponseField name="workflows" type="WorkflowProxy">
+  **EXPERIMENTAL** - Workflow API.
+</ResponseField>
+
+### State Expiry Handlers
+
+Handle state expiration events:
+
+```typescript
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    bot.stateExpired('userSession', async ({ state, client, logger }) => {
+      logger.forBot().info('Session expired for:', state.id)
+      
+      // Notify user
+      await client.createMessage({
+        conversationId: state.id,
+        userId: state.id,
+        type: 'text',
+        payload: {
+          text: 'Your session has expired. Please login again.'
+        }
+      })
+    })
+  }
+})
+```
+
+### Hook Handlers
+
+Intercept and modify operations before/after execution:
+
+#### Before Hooks
+
+```typescript
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    // Intercept incoming events
+    bot.beforeIncomingEvent('*', async ({ data, client, logger }) => {
+      logger.forBot().info('Event incoming:', data.type)
+      
+      // Modify event before processing
+      return {
+        data: {
+          ...data,
+          payload: {
+            ...data.payload,
+            timestamp: new Date().toISOString()
+          }
+        }
+      }
+    })
+    
+    // Intercept incoming messages
+    bot.beforeIncomingMessage('text', async ({ data, logger }) => {
+      // Stop processing if message contains spam
+      if (data.payload.text.includes('spam')) {
+        logger.forBot().warn('Spam detected, stopping')
+        return { stop: true }
+      }
+      
+      return { data }
+    })
+    
+    // Intercept outgoing messages
+    bot.beforeOutgoingMessage('*', async ({ data }) => {
+      // Add metadata to all outgoing messages
+      return {
+        data: {
+          ...data,
+          tags: {
+            ...data.tags,
+            sentBy: 'bot'
+          }
+        }
+      }
+    })
+    
+    // Intercept action calls
+    bot.beforeOutgoingCallAction('*', async ({ data, logger }) => {
+      logger.forBot().info('Calling action:', data.type)
+      return { data }
+    })
+  }
+})
+```
+
+#### After Hooks
+
+```typescript
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    // Process after event received
+    bot.afterIncomingEvent('*', async ({ data, logger }) => {
+      logger.forBot().info('Event processed:', data.type)
+      return { data }
+    })
+    
+    // Process after message received
+    bot.afterIncomingMessage('*', async ({ data, client }) => {
+      // Track analytics
+      await client.trackAnalytics({
+        event: 'message_received',
+        properties: {
+          type: data.type
+        }
+      })
+      
+      return { data }
+    })
+    
+    // Process after message sent
+    bot.afterOutgoingMessage('*', async ({ data, logger }) => {
+      logger.forBot().debug('Message sent:', data.message.id)
+      return { data }
+    })
+    
+    // Process after action called
+    bot.afterOutgoingCallAction('*', async ({ data, logger }) => {
+      logger.forBot().info('Action result:', data.output)
+      return { data }
+    })
+  }
+})
+```
+
+### Workflow Handlers
+
+**EXPERIMENTAL** - Handle workflow lifecycle events:
+
+```typescript
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    // When workflow starts
+    bot.workflowStart('onboarding', async ({ workflow, client, logger }) => {
+      logger.forBot().info('Workflow started:', workflow.id)
+      
+      // Update workflow state
+      await workflow.update({
+        output: { step: 'welcome' }
+      })
+    })
+    
+    // When workflow continues
+    bot.workflowContinue('onboarding', async ({ workflow, client }) => {
+      // Process workflow continuation
+    })
+    
+    // When workflow times out
+    bot.workflowTimeout('onboarding', async ({ workflow, client, logger }) => {
+      logger.forBot().warn('Workflow timed out:', workflow.id)
+      
+      // Clean up or notify
+    })
+  }
+})
+```
+
+## Action Implementations
+
+Implement actions defined in the bot definition:
+
+```typescript
+import { Bot } from '@botpress/sdk'
+import definition from './bot.definition'
+
+export default new Bot({
+  definition,
+  actions: {
+    createTicket: async ({ input, client, ctx, logger, workflows }) => {
+      logger.forBot().info('Creating ticket for bot:', ctx.botId)
+      
+      // Validate input
+      if (!input.title || input.title.length < 3) {
+        throw new Error('Title must be at least 3 characters')
+      }
+      
+      // Call external API
+      const ticket = await fetch('https://api.ticketing.com/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input)
+      }).then(r => r.json())
+      
+      // Store in bot state
+      await client.setState({
+        type: 'bot',
+        name: 'lastTicket',
+        id: ctx.botId,
+        payload: { ticketId: ticket.id }
+      })
+      
+      // Return typed output
+      return {
+        ticketId: ticket.id,
+        url: ticket.url
+      }
+    },
+    
+    processPayment: async ({ input, client, logger }) => {
+      logger.forBot().info('Processing payment:', input.amount)
+      
+      // Payment processing logic
+      const result = await processPaymentWithProvider(input)
+      
+      return {
+        transactionId: result.id,
+        status: result.success ? 'success' : 'failed'
+      }
+    }
+  }
+})
+```
+
+**Action Handler Props:**
+
+<ResponseField name="input" type="ActionInput">
+  Type-safe action input matching the definition schema.
+</ResponseField>
+
+<ResponseField name="client" type="BotSpecificClient">
+  Type-safe API client.
+</ResponseField>
+
+<ResponseField name="ctx" type="BotContext">
+  Bot context with configuration.
+</ResponseField>
+
+<ResponseField name="logger" type="BotLogger">
+  Logger instance.
+</ResponseField>
+
+<ResponseField name="workflows" type="WorkflowProxy">
+  **EXPERIMENTAL** - Workflow API.
+</ResponseField>
+
+## Methods
+
+### start
+
+Start the bot HTTP server:
+
+```typescript
+start(port?: number): Promise<Server>
+```
+
+**Example:**
+
+```typescript
+import bot from './index'
+
+bot.start(3000).then((server) => {
+  console.log('Bot started on port 3000')
+})
+```
+
+## Properties
+
+<ResponseField name="handler" type="RequestHandler">
+  HTTP request handler for the bot.
+</ResponseField>
+
+<ResponseField name="actionHandlers" type="ActionHandlers">
+  Map of action implementations.
+</ResponseField>
+
+<ResponseField name="messageHandlers" type="MessageHandlers">
+  Map of message handler arrays.
+</ResponseField>
+
+<ResponseField name="eventHandlers" type="EventHandlers">
+  Map of event handler arrays.
+</ResponseField>
+
+<ResponseField name="hookHandlers" type="HookHandlers">
+  Map of hook handler arrays.
+</ResponseField>
+
+## Complete Example
+
+```typescript index.ts
+import { Bot } from '@botpress/sdk'
+import definition from './bot.definition'
+
+export default new Bot({
+  definition,
+  
+  // Register handler
+  register: async ({ ctx, client, logger }) => {
+    logger.forBot().info('Bot registered:', ctx.botId)
+    
+    await client.setState({
+      type: 'bot',
+      name: 'config',
+      id: ctx.botId,
+      payload: {
+        version: '1.0.0',
+        registeredAt: new Date().toISOString()
+      }
+    })
+  },
+  
+  // Action implementations
+  actions: {
+    createTicket: async ({ input, client, logger }) => {
+      const ticket = await createExternalTicket(input)
+      
+      logger.forBot().info('Ticket created:', ticket.id)
+      
+      return {
+        ticketId: ticket.id,
+        url: ticket.url
+      }
+    }
+  },
+  
+  // Event and message handlers
+  on: (bot) => {
+    // Handle text messages
+    bot.message('text', async ({ message, user, conversation, client }) => {
+      const text = message.payload.text.toLowerCase()
+      
+      if (text.includes('help')) {
+        await client.createMessage({
+          conversationId: conversation.id,
+          userId: user.id,
+          type: 'text',
+          payload: {
+            text: 'How can I help you today?'
+          }
+          tags: {
+            category: 'support'
+          }
+        })
+      }
+    })
+    
+    // Handle custom events
+    bot.event('issueCreated', async ({ event, client, logger }) => {
+      logger.forBot().info('New issue:', event.payload.issueId)
+      
+      // Trigger workflow or notification
+    })
+    
+    // Before hooks for validation
+    bot.beforeIncomingMessage('*', async ({ data }) => {
+      // Filter spam
+      if (isSpam(data.payload)) {
+        return { stop: true }
+      }
+      return { data }
+    })
+    
+    // After hooks for analytics
+    bot.afterIncomingMessage('*', async ({ data, client }) => {
+      await client.trackAnalytics({
+        event: 'message_received',
+        properties: { type: data.type }
+      })
+      return { data }
+    })
+  }
+})
+```
+
+## See Also
+
+- [BotDefinition](/sdk/bot/definition) - Define bot structure
+- [BotHandlers](/sdk/bot/handlers) - Handler type reference
+- [BotSpecificClient](/sdk/bot/client) - API client reference

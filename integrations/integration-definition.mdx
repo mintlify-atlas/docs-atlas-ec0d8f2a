@@ -1,0 +1,133 @@
+---
+title: Integration definition
+description: Define the structure and capabilities of your integration
+---
+
+The integration definition specifies channels, actions, events, configuration, and other properties of your integration.
+
+## Basic structure
+
+```typescript integration.definition.ts
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'workspace/integration-name',
+  version: '1.0.0',
+  title: 'Integration Title',
+  description: 'Integration description',
+  icon: 'icon.svg',
+  readme: 'hub.md',
+})
+```
+
+## Required properties
+
+### Name
+
+Integration name with workspace handle:
+
+```typescript
+name: 'acme/slack'
+```
+
+<Warning>
+Integration names must include your workspace handle in the format `workspace/integration-name`.
+</Warning>
+
+### Version
+
+Semantic version:
+
+```typescript
+version: '1.0.0'
+```
+
+## Optional metadata
+
+### Title and description
+
+```typescript
+title: 'Slack Integration',
+description: 'Connect your bot to Slack workspaces',
+```
+
+### Icon
+
+SVG icon file:
+
+```typescript
+icon: 'icon.svg'
+```
+
+### README
+
+Markdown documentation:
+
+```typescript
+readme: 'hub.md'
+```
+
+### Attributes
+
+Metadata attributes:
+
+```typescript
+attributes: {
+  category: 'Communication & Channels',
+  featured: 'true',
+}
+```
+
+## Configuration
+
+Define required configuration:
+
+```typescript
+configuration: {
+  schema: z.object({
+    botToken: z.string().min(1).describe('Bot Token'),
+    workspace: z.string().optional(),
+  }),
+}
+```
+
+### Multiple configurations
+
+```typescript
+configurations: {
+  oauth: {
+    schema: z.object({
+      clientId: z.string(),
+      clientSecret: z.string(),
+    }),
+  },
+  apiToken: {
+    schema: z.object({
+      apiToken: z.string(),
+    }),
+  },
+}
+```
+
+## Type signature
+
+```typescript
+class IntegrationDefinition<
+  TName extends string,
+  TVersion extends string,
+  TConfig extends BaseConfig,
+  TConfigs extends BaseConfigs,
+  TEvents extends BaseEvents,
+  TActions extends BaseActions,
+  TChannels extends BaseChannels,
+  TStates extends BaseStates,
+  TEntities extends BaseEntities
+> {
+  constructor(props: IntegrationDefinitionProps)
+  
+  extend<P extends InterfacePackage>(
+    interfacePkg: P,
+    builder: ExtensionBuilder
+  ): this
+}
+```

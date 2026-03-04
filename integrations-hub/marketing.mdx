@@ -1,0 +1,425 @@
+---
+title: Marketing & Email
+description: Connect your Botpress bot to email and marketing automation platforms
+---
+
+Integrate your chatbot with email service providers and marketing platforms to send emails, manage campaigns, and automate marketing workflows.
+
+## Available Marketing Integrations
+
+<CardGroup cols={2}>
+  <Card title="Mailchimp" icon="mailchimp">
+    Send mass email campaigns and manage marketing lists
+  </Card>
+  
+  <Card title="SendGrid" icon="envelope">
+    Send transactional emails with markdown support
+  </Card>
+  
+  <Card title="Resend" icon="paper-plane">
+    Modern email API for sending rich-text emails
+  </Card>
+  
+  <Card title="Loops" icon="repeat">
+    Handle transactional emails from your chatbot
+  </Card>
+  
+  <Card title="Email (IMAP/SMTP)" icon="at">
+    Send and receive emails using standard protocols
+  </Card>
+</CardGroup>
+
+## Mailchimp
+
+**Installation:**
+```bash
+bp add mailchimp
+```
+
+**Description:**
+Send mass email campaigns from within your workflows. Manage customers, campaigns, lists and more.
+
+**Key Features:**
+- **Email Campaigns:** Create and send marketing campaigns
+- **List Management:** Manage subscriber lists and segments
+- **Audience Management:** Add, update, and remove contacts
+- **Campaign Analytics:** Track email performance
+- **Templates:** Use and customize email templates
+- **Automation:** Set up automated email workflows
+
+**Use Cases:**
+- Newsletter subscription via chatbot
+- Lead capture and list building
+- Campaign triggers from chat interactions
+- Subscriber management
+- Marketing automation workflows
+
+**Actions:**
+- Add subscribers to lists
+- Create campaigns
+- Send campaigns
+- Update subscriber information
+- Manage tags and segments
+- Get campaign statistics
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/mailchimp)
+
+---
+
+## SendGrid
+
+**Installation:**
+```bash
+bp add sendgrid
+```
+
+**Description:**
+Send markdown rich-text emails using the SendGrid email service.
+
+**Key Features:**
+- **Transactional Emails:** Send personalized emails
+- **Markdown Support:** Write emails in markdown format
+- **Template Engine:** Use SendGrid templates
+- **Delivery Analytics:** Track email delivery and opens
+- **Attachments:** Send files with emails
+- **Scheduling:** Schedule emails for later delivery
+
+**Use Cases:**
+- Order confirmations
+- Password resets
+- Welcome emails
+- Notification emails
+- Receipt delivery
+- Support ticket emails
+
+**Actions:**
+- Send email
+- Send templated email
+- Send email with attachments
+- Schedule email delivery
+
+**Configuration:**
+Requires SendGrid API key.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/sendgrid)
+
+---
+
+## Resend
+
+**Installation:**
+```bash
+bp add resend
+```
+
+**Description:**
+Send markdown rich-text emails using the Resend email service.
+
+**Key Features:**
+- **Modern Email API:** Simple, developer-friendly API
+- **Markdown Emails:** Write emails in markdown
+- **HTML Support:** Send fully customized HTML emails
+- **Attachments:** Include file attachments
+- **Templates:** Use email templates
+- **Analytics:** Track delivery and engagement
+
+**Use Cases:**
+- Transactional emails
+- User notifications
+- Email verification
+- System alerts
+- Report delivery
+
+**Actions:**
+- Send markdown email
+- Send HTML email
+- Send email with attachments
+
+**Configuration:**
+Requires Resend API key.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/resend)
+
+---
+
+## Loops
+
+**Installation:**
+```bash
+bp add loops
+```
+
+**Description:**
+Handle transactional emails from your chatbot.
+
+**Key Features:**
+- **Transactional Focus:** Optimized for transactional emails
+- **Event-Driven:** Trigger emails based on events
+- **Contact Management:** Manage email contacts
+- **Email Sequences:** Create automated email sequences
+- **Personalization:** Dynamic content in emails
+
+**Use Cases:**
+- Onboarding email sequences
+- Event-triggered notifications
+- User engagement emails
+- Drip campaigns
+- Behavioral emails
+
+**Actions:**
+- Send transactional email
+- Trigger email sequence
+- Update contact properties
+- Track email events
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/loops)
+
+---
+
+## Email (IMAP/SMTP)
+
+**Installation:**
+```bash
+bp add email
+```
+
+**Description:**
+Send and receive emails using IMAP and SMTP protocols.
+
+**Key Features:**
+- **SMTP Sending:** Send emails via SMTP
+- **IMAP Receiving:** Receive and process incoming emails
+- **Custom Servers:** Use any IMAP/SMTP server
+- **Full Control:** Complete email protocol support
+- **Attachments:** Send and receive file attachments
+
+**Use Cases:**
+- Email bot integration
+- Support ticket system
+- Custom email workflows
+- Email-based authentication
+- Document delivery via email
+
+**Configuration:**
+Requires SMTP and IMAP server credentials:
+- SMTP host, port, username, password
+- IMAP host, port, username, password
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/email)
+
+---
+
+## Email Marketing Patterns
+
+### Newsletter Subscription
+
+```typescript
+// User subscribes to newsletter
+const email = event.payload.email
+const name = event.state.user.name
+
+// Add to Mailchimp list
+await client.callAction({
+  type: 'mailchimp:addSubscriber',
+  input: {
+    listId: 'your-list-id',
+    email: email,
+    firstName: name.split(' ')[0],
+    status: 'subscribed',
+    tags: ['chatbot-signup']
+  }
+})
+
+// Send welcome email
+await client.callAction({
+  type: 'sendgrid:sendEmail',
+  input: {
+    to: email,
+    subject: 'Welcome to our newsletter!',
+    markdown: `# Welcome ${name}!\n\nThank you for subscribing.`
+  }
+})
+```
+
+### Transactional Email
+
+```typescript
+// Order confirmation email
+await client.callAction({
+  type: 'resend:sendEmail',
+  input: {
+    to: customerEmail,
+    subject: `Order Confirmation #${orderId}`,
+    markdown: `
+# Order Confirmed!
+
+**Order ID:** ${orderId}
+**Total:** $${total}
+
+## Items:
+${items.map(item => `- ${item.name}: $${item.price}`).join('\n')}
+
+Thank you for your order!
+    `
+  }
+})
+```
+
+### Lead Nurturing Sequence
+
+```typescript
+// Add contact to Loops for drip campaign
+await client.callAction({
+  type: 'loops:createContact',
+  input: {
+    email: leadEmail,
+    firstName: leadName,
+    source: 'chatbot',
+    customFields: {
+      industry: leadIndustry,
+      company_size: companySize
+    }
+  }
+})
+
+// Trigger email sequence
+await client.callAction({
+  type: 'loops:sendEvent',
+  input: {
+    email: leadEmail,
+    eventName: 'lead_captured'
+  }
+})
+```
+
+---
+
+## Best Practices
+
+### Email Deliverability
+
+1. **Authenticate your domain:**
+   - Set up SPF records
+   - Configure DKIM signing
+   - Implement DMARC policy
+
+2. **Maintain clean lists:**
+   - Remove bounced emails
+   - Honor unsubscribe requests
+   - Validate email addresses
+
+3. **Avoid spam triggers:**
+   - Don't use excessive capitalization
+   - Limit exclamation points
+   - Include unsubscribe links
+   - Maintain text/HTML balance
+
+### Content Best Practices
+
+1. **Personalization:**
+   - Use recipient's name
+   - Segment your audience
+   - Tailor content to user behavior
+
+2. **Mobile Optimization:**
+   - Use responsive templates
+   - Keep subject lines short
+   - Use large, tappable buttons
+
+3. **Clear CTAs:**
+   - One primary call-to-action
+   - Make buttons obvious
+   - Use action-oriented text
+
+### Compliance
+
+1. **GDPR Compliance:**
+   - Get explicit consent
+   - Provide easy unsubscribe
+   - Store consent records
+   - Honor data deletion requests
+
+2. **CAN-SPAM Compliance:**
+   - Include physical address
+   - Honor opt-out requests within 10 days
+   - Use accurate subject lines
+   - Label commercial emails
+
+### Performance
+
+1. **Timing:**
+   - Send at optimal times
+   - Consider time zones
+   - Test send times
+
+2. **Frequency:**
+   - Don't over-email
+   - Let users set preferences
+   - Monitor unsubscribe rates
+
+3. **Testing:**
+   - A/B test subject lines
+   - Test email templates
+   - Preview on multiple clients
+
+---
+
+## Integration Comparison
+
+| Integration | Best For | Transactional | Marketing | Automation |
+|------------|----------|---------------|-----------|------------|
+| Mailchimp | Marketing campaigns | ✓ | ✓✓✓ | ✓✓✓ |
+| SendGrid | Transactional emails | ✓✓✓ | ✓ | ✓ |
+| Resend | Modern transactional | ✓✓✓ | ✓ | ✓ |
+| Loops | Event-driven emails | ✓✓✓ | ✓✓ | ✓✓✓ |
+| Email (IMAP/SMTP) | Custom workflows | ✓✓ | ✓ | ✓ |
+
+---
+
+## Multi-Provider Strategy
+
+Many organizations use multiple email providers:
+
+```bash
+# Install multiple integrations
+bp add mailchimp sendgrid
+```
+
+**Example strategy:**
+- **Mailchimp:** Newsletter and marketing campaigns
+- **SendGrid:** Transactional emails (orders, receipts)
+- **Loops:** Onboarding and engagement sequences
+
+---
+
+## Monitoring & Analytics
+
+### Track key metrics:
+- **Delivery rate:** Percentage of emails delivered
+- **Open rate:** Percentage of emails opened
+- **Click rate:** Percentage of links clicked
+- **Unsubscribe rate:** Rate of opt-outs
+- **Bounce rate:** Invalid or rejected emails
+
+### Use webhooks for events:
+- Email delivered
+- Email opened
+- Link clicked
+- Email bounced
+- Spam report
+- Unsubscribe
+
+---
+
+## Additional Resources
+
+- [Mailchimp API Documentation](https://mailchimp.com/developer/)
+- [SendGrid API Documentation](https://docs.sendgrid.com/)
+- [Resend Documentation](https://resend.com/docs)
+- [Email Marketing Best Practices](https://www.mailchimp.com/marketing-glossary/email-marketing/)
+- [GDPR Email Guidelines](https://gdpr.eu/email-encryption/)

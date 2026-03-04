@@ -1,0 +1,108 @@
+---
+title: bp deploy
+description: Deploy your project to Botpress Cloud
+---
+
+Deploy bots, integrations, and plugins to Botpress Cloud.
+
+## Usage
+
+```bash
+bp deploy
+```
+
+## Options
+
+### --noBuild
+
+Skip build step:
+
+```bash
+bp deploy --noBuild
+```
+
+### --visibility
+
+Set integration/plugin visibility:
+
+```bash
+bp deploy --visibility public
+bp deploy --visibility private
+bp deploy --visibility unlisted
+```
+
+### --dryRun
+
+Validate without deploying:
+
+```bash
+bp deploy --dryRun
+```
+
+### --botId
+
+Deploy to specific bot:
+
+```bash
+bp deploy --botId abc123
+```
+
+### --createNewBot
+
+Create new bot instead of updating:
+
+```bash
+bp deploy --createNewBot
+```
+
+## Deployment flow
+
+<Steps>
+  <Step title="Build">
+    Project is built (unless --noBuild)
+  </Step>
+  <Step title="Validate">
+    Definition is validated
+  </Step>
+  <Step title="Upload">
+    Code is uploaded to cloud
+  </Step>
+  <Step title="Register">
+    Resources are registered
+  </Step>
+</Steps>
+
+## Bot deployment
+
+```bash
+cd my-bot
+bp deploy
+```
+
+First deploy prompts for bot selection.
+Subsequent deploys use cached bot ID.
+
+## Integration deployment
+
+```bash
+cd my-integration
+bp deploy --visibility public
+```
+
+Integrations are deployed to workspace.
+
+## Plugin deployment
+
+```bash
+cd my-plugin
+bp deploy --visibility public
+```
+
+## Secrets
+
+Integrations prompt for secrets:
+
+```bash
+? Enter value for API_KEY: ****
+? Enter value for WEBHOOK_SECRET: ****
+```

@@ -1,0 +1,383 @@
+---
+title: Integrations overview
+description: Connect your bots to external platforms and services
+---
+
+Integrations connect Botpress bots to external platforms like Slack, Telegram, WhatsApp, and custom services. They provide channels for communication and actions for interacting with external APIs.
+
+## What are integrations?
+
+Integrations are packages that:
+- **Provide channels** for receiving and sending messages
+- **Expose actions** that bots can call
+- **Emit events** based on external triggers
+- **Manage entities** for data modeling
+- **Handle webhooks** from external services
+
+## Integration architecture
+
+An integration consists of:
+
+```
+my-integration/
+├── src/
+│   ├── index.ts           # Integration implementation
+│   ├── setup/             # Registration handlers
+│   ├── actions/           # Action handlers
+│   ├── channels.ts        # Channel handlers
+│   └── client.ts          # API client
+├── integration.definition.ts  # Integration definition
+├── icon.svg
+├── hub.md
+└── package.json
+```
+
+## Key components
+
+### Integration definition
+
+Defines the integration's structure:
+
+```typescript integration.definition.ts
+import { IntegrationDefinition } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'workspace/integration-name',
+  version: '1.0.0',
+  title: 'My Integration',
+  description: 'Integration description',
+  icon: 'icon.svg',
+  readme: 'hub.md',
+  
+  configuration: {
+    schema: z.object({
+      apiKey: z.string(),
+    }),
+  },
+  
+  channels: { /* ... */ },
+  actions: { /* ... */ },
+  events: { /* ... */ },
+  entities: { /* ... */ },
+})
+```
+
+### Integration implementation
+
+Implements the integration logic:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const integration = new bp.Integration({
+  register: async ({ ctx, client }) => {
+    // Register webhooks
+    // Initialize external connections
+  },
+  
+  unregister: async ({ ctx, client }) => {
+    // Clean up webhooks
+    // Close connections
+  },
+  
+  handler: async ({ req, client, ctx }) => {
+    // Handle incoming webhooks
+  },
+  
+  actions: {
+    sendMessage: async ({ input, client, ctx }) => {
+      // Implement action
+      return { success: true }
+    },
+  },
+  
+  channels: {
+    channel: {
+      messages: {
+        text: async ({ payload, ctx, conversation, ack }) => {
+          // Send text message to external platform
+          await ack({ tags: { id: 'msg-123' } })
+        },
+      },
+    },
+  },
+})
+
+export default integration
+```
+
+## Integration types
+
+### Channel integrations
+
+Provide messaging channels:
+- Slack
+- Telegram  
+- WhatsApp
+- Discord
+- Microsoft Teams
+
+### Service integrations
+
+Connect to external APIs:
+- OpenAI
+- Anthropic
+- Google Sheets
+- Airtable
+- Linear
+
+### Custom integrations
+
+Build your own integrations for:
+- Internal APIs
+- Custom platforms
+- Legacy systems
+- Specialized workflows
+
+## Integration capabilities
+
+### Channels
+
+Channels enable message exchange:
+
+```typescript
+channels: {
+  channel: {
+    title: 'Main Channel',
+    description: 'Primary communication channel',
+    messages: {
+      text: { schema: textMessageSchema },
+      image: { schema: imageMessageSchema },
+      // ... more message types
+    },
+    message: {
+      tags: {
+        id: { title: 'Message ID' },
+        threadId: { title: 'Thread ID' },
+      },
+    },
+    conversation: {
+      tags: {
+        channel: { title: 'Channel Name' },
+      },
+    },
+  },
+}
+```
+
+### Actions
+
+Actions expose API functionality:
+
+```typescript
+actions: {
+  createTask: {
+    title: 'Create Task',
+    description: 'Create a new task',
+    input: {
+      schema: z.object({
+        title: z.string(),
+        description: z.string(),
+        assignee: z.string().optional(),
+      }),
+    },
+    output: {
+      schema: z.object({
+        taskId: z.string(),
+        url: z.string(),
+      }),
+    },
+  },
+}
+```
+
+### Events
+
+Events notify bots of external changes:
+
+```typescript
+events: {
+  taskUpdated: {
+    title: 'Task Updated',
+    description: 'Triggered when a task is updated',
+    schema: z.object({
+      taskId: z.string(),
+      status: z.string(),
+      updatedBy: z.string(),
+    }),
+  },
+}
+```
+
+### Entities
+
+Entities model external data:
+
+```typescript
+entities: {
+  task: {
+    schema: z.object({
+      id: z.string(),
+      title: z.string(),
+      status: z.enum(['open', 'in_progress', 'done']),
+      assignee: z.string().optional(),
+    }),
+  },
+}
+```
+
+## Integration states
+
+Store integration-specific data:
+
+```typescript
+states: {
+  webhook: {
+    type: 'integration',
+    schema: z.object({
+      webhookId: z.string(),
+      url: z.string(),
+      secret: z.string(),
+    }),
+  },
+}
+```
+
+## Configuration
+
+Define required configuration:
+
+```typescript
+configuration: {
+  schema: z.object({
+    apiKey: z.string().describe('API Key'),
+    apiUrl: z.string().url().optional(),
+    timeout: z.number().default(5000),
+  }),
+}
+```
+
+Multiple configurations:
+
+```typescript
+configurations: {
+  oauth: {
+    schema: z.object({
+      clientId: z.string(),
+      clientSecret: z.string(),
+      redirectUrl: z.string(),
+    }),
+  },
+  apiKey: {
+    schema: z.object({
+      apiKey: z.string(),
+    }),
+  },
+}
+```
+
+## Secrets
+
+Define required secrets:
+
+```typescript
+import { sentry as sentryHelpers } from '@botpress/sdk-addons'
+
+export default new IntegrationDefinition({
+  // ...
+  secrets: {
+    ...sentryHelpers.COMMON_SECRET_NAMES,
+    WEBHOOK_SECRET: {
+      description: 'Secret for webhook validation',
+    },
+  },
+})
+```
+
+## User definition
+
+Define user tags:
+
+```typescript
+user: {
+  tags: {
+    id: { 
+      title: 'User ID',
+      description: 'External platform user ID',
+    },
+    username: {
+      title: 'Username',
+      description: 'User handle',
+    },
+  },
+}
+```
+
+## Identifier
+
+Extract user identifiers:
+
+```typescript
+identifier: {
+  extractScript: `
+    // Extract user ID from message
+    return { userId: event.payload.userId }
+  `,
+  fallbackHandlerScript: `
+    // Handle unidentified users
+    return { userId: 'anonymous' }
+  `,
+}
+```
+
+## Interface implementation
+
+Implement standard interfaces:
+
+```typescript
+import typingIndicator from 'bp_modules/typing-indicator'
+
+export default new IntegrationDefinition({
+  // ...
+})
+  .extend(typingIndicator, () => ({
+    entities: {},
+  }))
+```
+
+## Integration lifecycle
+
+<Steps>
+  <Step title="Registration">
+    Integration is registered when added to a bot
+  </Step>
+  <Step title="Configuration">
+    User provides required configuration and secrets
+  </Step>
+  <Step title="Webhook setup">
+    Integration registers webhooks with external platform
+  </Step>
+  <Step title="Active">
+    Integration handles messages, actions, and events
+  </Step>
+  <Step title="Unregistration">
+    Integration cleans up when removed from bot
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Creating integrations" icon="plus" href="/integrations/creating-integrations">
+    Build your first integration
+  </Card>
+  <Card title="Integration definition" icon="file-code" href="/integrations/integration-definition">
+    Define integration structure
+  </Card>
+  <Card title="Channels" icon="hashtag" href="/integrations/channels">
+    Implement messaging channels
+  </Card>
+  <Card title="Actions" icon="bolt" href="/integrations/actions">
+    Create integration actions
+  </Card>
+</CardGroup>

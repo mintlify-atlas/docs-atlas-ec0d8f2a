@@ -1,0 +1,242 @@
+---
+title: AI & LLM Providers
+description: Connect your Botpress bot to leading AI and language model providers
+---
+
+Integrate cutting-edge AI models into your chatbot to power natural language understanding, content generation, image creation, speech synthesis, and more.
+
+## Available AI Integrations
+
+<CardGroup cols={2}>
+  <Card title="OpenAI" icon="openai">
+    Access GPT models, DALL-E image generation, Whisper transcription, and text-to-speech
+  </Card>
+  
+  <Card title="Anthropic" icon="brain">
+    Use Claude models for advanced reasoning, long context understanding, and safe AI responses
+  </Card>
+  
+  <Card title="Google AI" icon="google">
+    Leverage Gemini models for multimodal tasks, content generation, and chat completions
+  </Card>
+  
+  <Card title="Cerebras" icon="microchip">
+    High-performance inference models for fast content generation and chat completions
+  </Card>
+  
+  <Card title="Groq" icon="bolt">
+    Ultra-fast LLM inference for content generation, chat responses, and audio transcription
+  </Card>
+  
+  <Card title="Mistral AI" icon="wind">
+    Open-weight language models for privacy-focused and customizable AI applications
+  </Card>
+  
+  <Card title="Fireworks AI" icon="fire">
+    Fast and cost-effective models for content generation, chat, and audio transcription
+  </Card>
+  
+  <Card title="DALL-E" icon="image">
+    Generate images from text descriptions (Deprecated - use OpenAI integration instead)
+  </Card>
+</CardGroup>
+
+## OpenAI
+
+**Installation:**
+```bash
+bp add openai
+```
+
+**Description:**
+Gain access to OpenAI models for text generation, speech synthesis, audio transcription, and image generation.
+
+**Key Features:**
+- **Language Models:** GPT-4, GPT-4 Turbo, GPT-3.5 Turbo for chat and completions
+- **Image Generation:** DALL-E 3 and DALL-E 2 for creating images from text
+- **Speech-to-Text:** Whisper for accurate audio transcription
+- **Text-to-Speech:** Generate natural-sounding speech with multiple voice options
+- **Embeddings:** Create vector embeddings for semantic search
+
+**Actions:**
+- Generate Speech (TTS with voices: alloy, echo, fable, onyx, nova, shimmer)
+
+**Configuration:**
+Requires `OPENAI_API_KEY` secret.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/openai)
+
+---
+
+## Anthropic
+
+**Installation:**
+```bash
+bp add anthropic
+```
+
+**Description:**
+Access a curated list of Claude models to set as your chosen LLM.
+
+**Key Features:**
+- **Claude Models:** Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku
+- **Long Context:** Handle up to 200K tokens of context
+- **Advanced Reasoning:** Superior performance on complex tasks
+- **Safety:** Built with constitutional AI for safer responses
+
+**Configuration:**
+Requires `ANTHROPIC_API_KEY` secret.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/anthropic)
+
+---
+
+## Google AI
+
+**Installation:**
+```bash
+bp add google-ai
+```
+
+**Description:**
+Gain access to Gemini models for content generation, chat responses, and advanced language tasks.
+
+**Key Features:**
+- **Gemini Models:** Multimodal AI for text, image, and video understanding
+- **Content Generation:** Create high-quality text across various formats
+- **Chat Completions:** Build conversational experiences
+- **Multimodal:** Process text, images, and videos in a single model
+
+**Configuration:**
+Requires Google AI API credentials.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/google-ai)
+
+---
+
+## Cerebras
+
+**Installation:**
+```bash
+bp add cerebras
+```
+
+**Description:**
+Get access to a curated list of Cerebras models for content generation and chat completions within your bot.
+
+**Key Features:**
+- **High Performance:** Extremely fast inference speeds
+- **Content Generation:** Generate text efficiently
+- **Chat Completions:** Build responsive conversational agents
+
+**Configuration:**
+Requires `CEREBRAS_API_KEY` secret.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/cerebras)
+
+---
+
+## Groq
+
+**Installation:**
+```bash
+bp add groq
+```
+
+**Description:**
+Gain access to Groq models for content generation, chat responses, and audio transcription.
+
+**Key Features:**
+- **Ultra-Fast Inference:** Industry-leading speed for LLM responses
+- **Language Models:** Fast content generation and chat completions
+- **Speech-to-Text:** Audio transcription capabilities
+- **Low Latency:** Ideal for real-time conversational applications
+
+**Configuration:**
+Requires `GROQ_API_KEY` secret.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/groq)
+
+---
+
+## Mistral AI
+
+**Installation:**
+```bash
+bp add mistral-ai
+```
+
+**Description:**
+Access a curated list of Mistral AI models to set as your chosen LLM.
+
+**Key Features:**
+- **Open Models:** Open-weight models for flexibility and privacy
+- **High Performance:** Competitive performance across benchmarks
+- **European AI:** European-based AI provider
+- **Cost Effective:** Efficient models for various use cases
+
+**Configuration:**
+Requires Mistral AI API key.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/mistral-ai)
+
+---
+
+## Fireworks AI
+
+**Installation:**
+```bash
+bp add fireworks-ai
+```
+
+**Description:**
+Choose from curated Fireworks AI models for content generation, chat completions, and audio transcription.
+
+**Key Features:**
+- **Fast Inference:** Optimized for speed and cost
+- **Multiple Models:** Access to various open-source LLMs
+- **Audio Transcription:** Speech-to-text capabilities
+- **Flexible Deployment:** Self-hosted or cloud options
+
+**Configuration:**
+Requires Fireworks AI API credentials.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/fireworks-ai)
+
+---
+
+## Usage Example
+
+Once you've installed an AI provider integration, you can use it as your bot's LLM:
+
+```typescript
+import { OpenAI } from '@botpress/openai'
+
+// The integration automatically provides LLM capabilities
+// Configure in your bot settings or via the Botpress Studio
+```
+
+## Choosing the Right Provider
+
+- **OpenAI:** Best for general-purpose tasks, image generation, and speech
+- **Anthropic:** Best for safety-critical applications and long context
+- **Google AI:** Best for multimodal applications
+- **Cerebras/Groq:** Best for high-speed inference requirements
+- **Mistral AI:** Best for European data residency or open models
+- **Fireworks AI:** Best for cost optimization and flexibility
+
+## Configuration
+
+Most AI integrations require API keys. Store them securely as secrets:
+
+1. Install the integration: `bp add <provider>`
+2. Configure the integration in Botpress Studio
+3. Add your API key in the integration settings
+4. Select the integration as your bot's LLM provider

@@ -1,0 +1,62 @@
+---
+title: Creating plugins
+description: Build reusable plugins for bot functionality
+---
+
+Create plugins to package reusable bot functionality.
+
+## Initialize plugin
+
+```bash
+bp init --type plugin
+```
+
+## Define plugin
+
+```typescript plugin.definition.ts
+import { PluginDefinition, z } from '@botpress/sdk'
+import messaging from './bp_modules/messaging'
+
+export default new PluginDefinition({
+  name: 'acme/logger',
+  version: '1.0.0',
+  
+  interfaces: {
+    messaging,
+  },
+  
+  configuration: {
+    schema: z.object({
+      logLevel: z.enum(['debug', 'info']),
+    }),
+  },
+  
+  actions: {
+    log: {
+      input: { schema: z.object({ message: z.string() }) },
+      output: { schema: z.object({ success: z.boolean() }) },
+    },
+  },
+})
+```
+
+## Implement plugin
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const plugin = new bp.Plugin({
+  actions: {
+    log: async ({ input, logger }) => {
+      logger.info(input.message)
+      return { success: true }
+    },
+  },
+})
+
+plugin.on.message('*', async ({ message, logger }) => {
+  logger.info('Message received:', message.payload)
+})
+
+export default plugin
+```

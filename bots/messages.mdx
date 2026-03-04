@@ -1,0 +1,597 @@
+---
+title: Messages
+description: Send and receive messages with support for text, images, cards, and more
+---
+
+Messages are the primary way bots communicate with users. Botpress supports multiple message types for rich interactions.
+
+## Send messages
+
+Create messages using the client:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+bot.on.message('*', async ({ message, client, ctx }) => {
+  await client.createMessage({
+    conversationId: message.conversationId,
+    userId: ctx.botId,
+    tags: {},
+    type: 'text',
+    payload: {
+      text: 'Hello! How can I help you today?',
+    },
+  })
+})
+
+export default bot
+```
+
+## Message types
+
+### Text messages
+
+Send plain text:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'text',
+  payload: {
+    text: 'This is a text message',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const textMessageSchema = z.object({
+  text: z.string().min(1),
+})
+```
+
+### Image messages
+
+Send images:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'image',
+  payload: {
+    imageUrl: 'https://example.com/image.jpg',
+    title: 'Optional image title',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const imageMessageSchema = z.object({
+  imageUrl: z.string().min(1),
+  title: z.string().optional(),
+})
+```
+
+### Audio messages
+
+Send audio files:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'audio',
+  payload: {
+    audioUrl: 'https://example.com/audio.mp3',
+    title: 'Voice message',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const audioMessageSchema = z.object({
+  audioUrl: z.string().min(1),
+  title: z.string().optional(),
+})
+```
+
+### Video messages
+
+Send videos:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'video',
+  payload: {
+    videoUrl: 'https://example.com/video.mp4',
+    title: 'Tutorial video',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const videoMessageSchema = z.object({
+  videoUrl: z.string().min(1),
+  title: z.string().optional(),
+})
+```
+
+### File messages
+
+Send files:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'file',
+  payload: {
+    fileUrl: 'https://example.com/document.pdf',
+    title: 'Report.pdf',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const fileMessageSchema = z.object({
+  fileUrl: z.string().min(1),
+  title: z.string().optional(),
+})
+```
+
+### Location messages
+
+Send location:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'location',
+  payload: {
+    latitude: 45.5017,
+    longitude: -73.5673,
+    address: '1234 Main St, Montreal, QC',
+    title: 'Our office',
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const locationMessageSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number(),
+  address: z.string().optional(),
+  title: z.string().optional(),
+})
+```
+
+### Card messages
+
+Send interactive cards with buttons:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'card',
+  payload: {
+    title: 'Product Information',
+    subtitle: 'Premium subscription plan',
+    imageUrl: 'https://example.com/product.jpg',
+    actions: [
+      {
+        action: 'url',
+        label: 'Learn More',
+        value: 'https://example.com/premium',
+      },
+      {
+        action: 'postback',
+        label: 'Subscribe Now',
+        value: 'subscribe_premium',
+      },
+      {
+        action: 'say',
+        label: 'Contact Sales',
+        value: 'I want to talk to sales',
+      },
+    ],
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const cardSchema = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().optional(),
+  imageUrl: z.string().optional(),
+  actions: z.array(
+    z.object({
+      action: z.enum(['postback', 'url', 'say']),
+      label: z.string().min(1),
+      value: z.string().min(1),
+    })
+  ),
+})
+```
+
+### Carousel messages
+
+Send multiple cards in a carousel:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'carousel',
+  payload: {
+    items: [
+      {
+        title: 'Basic Plan',
+        subtitle: '$9.99/month',
+        imageUrl: 'https://example.com/basic.jpg',
+        actions: [
+          { action: 'postback', label: 'Select', value: 'plan_basic' },
+        ],
+      },
+      {
+        title: 'Pro Plan',
+        subtitle: '$19.99/month',
+        imageUrl: 'https://example.com/pro.jpg',
+        actions: [
+          { action: 'postback', label: 'Select', value: 'plan_pro' },
+        ],
+      },
+      {
+        title: 'Enterprise Plan',
+        subtitle: 'Custom pricing',
+        imageUrl: 'https://example.com/enterprise.jpg',
+        actions: [
+          { action: 'url', label: 'Contact Us', value: 'https://example.com/contact' },
+        ],
+      },
+    ],
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const carouselSchema = z.object({
+  items: z.array(cardSchema),
+})
+```
+
+### Choice messages (dropdown/buttons)
+
+Send options for users to choose:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'choice',
+  payload: {
+    text: 'What would you like to do?',
+    options: [
+      { label: 'View Orders', value: 'view_orders' },
+      { label: 'Track Shipment', value: 'track_shipment' },
+      { label: 'Contact Support', value: 'contact_support' },
+    ],
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const choiceSchema = z.object({
+  text: z.string().min(1),
+  options: z.array(
+    z.object({
+      label: z.string().min(1),
+      value: z.string().min(1),
+    })
+  ),
+})
+```
+
+### Bloc messages
+
+Send multiple message items in a single bloc:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {},
+  type: 'bloc',
+  payload: {
+    items: [
+      {
+        type: 'text',
+        payload: { text: 'Here are your order details:' },
+      },
+      {
+        type: 'image',
+        payload: { 
+          imageUrl: 'https://example.com/order.jpg',
+          title: 'Order #12345',
+        },
+      },
+      {
+        type: 'text',
+        payload: { text: 'Status: Shipped' },
+      },
+      {
+        type: 'location',
+        payload: {
+          latitude: 45.5017,
+          longitude: -73.5673,
+          title: 'Current location',
+        },
+      },
+    ],
+  },
+})
+```
+
+#### Type signature
+
+```typescript
+const blocItemSchema = z.union([
+  z.object({ type: z.literal('text'), payload: textMessageSchema }),
+  z.object({ type: z.literal('image'), payload: imageMessageSchema }),
+  z.object({ type: z.literal('audio'), payload: audioMessageSchema }),
+  z.object({ type: z.literal('video'), payload: videoMessageSchema }),
+  z.object({ type: z.literal('file'), payload: fileMessageSchema }),
+  z.object({ type: z.literal('location'), payload: locationMessageSchema }),
+])
+
+const blocSchema = z.object({
+  items: z.array(blocItemSchema),
+})
+```
+
+## Receive messages
+
+Handle incoming messages with type-specific handlers:
+
+```typescript src/index.ts
+import * as bp from '.botpress'
+
+const bot = new bp.Bot({ actions: {} })
+
+// Handle text messages
+bot.on.message('text', async ({ message, client, ctx }) => {
+  const userText = message.payload.text
+  console.log('User said:', userText)
+  
+  await client.createMessage({
+    conversationId: message.conversationId,
+    userId: ctx.botId,
+    tags: {},
+    type: 'text',
+    payload: { text: `You said: ${userText}` },
+  })
+})
+
+// Handle image messages
+bot.on.message('image', async ({ message, client, ctx }) => {
+  const imageUrl = message.payload.imageUrl
+  console.log('Received image:', imageUrl)
+  
+  await client.createMessage({
+    conversationId: message.conversationId,
+    userId: ctx.botId,
+    tags: {},
+    type: 'text',
+    payload: { text: 'Thanks for the image!' },
+  })
+})
+
+// Handle all message types
+bot.on.message('*', async ({ message }) => {
+  console.log('Message type:', message.type)
+  console.log('Message payload:', message.payload)
+})
+
+export default bot
+```
+
+## Message tags
+
+Add custom tags to messages:
+
+```typescript
+await client.createMessage({
+  conversationId: message.conversationId,
+  userId: ctx.botId,
+  tags: {
+    category: 'notification',
+    priority: 'high',
+    source: 'automated',
+  },
+  type: 'text',
+  payload: { text: 'Important notification' },
+})
+```
+
+Define message tags in bot definition:
+
+```typescript bot.definition.ts
+export default new sdk.BotDefinition({
+  message: {
+    tags: {
+      category: { 
+        title: 'Category', 
+        description: 'Message category' 
+      },
+      priority: { 
+        title: 'Priority', 
+        description: 'Message priority level' 
+      },
+    },
+  },
+})
+```
+
+## Get messages
+
+Retrieve message by ID:
+
+```typescript
+bot.on.message('*', async ({ client, message }) => {
+  const { message: msg } = await client.getMessage({
+    id: message.id,
+  })
+  
+  console.log('Message:', msg)
+  console.log('Created at:', msg.createdAt)
+  console.log('Type:', msg.type)
+  console.log('Payload:', msg.payload)
+})
+```
+
+## List messages
+
+List conversation messages:
+
+```typescript
+bot.on.message('*', async ({ client, conversation }) => {
+  const { messages } = await client.listMessages({
+    conversationId: conversation.id,
+    limit: 50,
+  })
+  
+  console.log(`Found ${messages.length} messages`)
+  
+  for (const msg of messages) {
+    console.log(`- ${msg.type}: ${JSON.stringify(msg.payload)}`) 
+  }
+})
+```
+
+### Pagination
+
+```typescript
+let nextToken: string | undefined
+const allMessages = []
+
+do {
+  const { messages, meta } = await client.listMessages({
+    conversationId: conversation.id,
+    limit: 100,
+    nextToken,
+  })
+  
+  allMessages.push(...messages)
+  nextToken = meta.nextToken
+} while (nextToken)
+
+console.log(`Total messages: ${allMessages.length}`)
+```
+
+## Update messages
+
+Update message tags:
+
+```typescript
+await client.updateMessage({
+  id: message.id,
+  tags: {
+    ...message.tags,
+    processed: 'true',
+    processedAt: new Date().toISOString(),
+  },
+})
+```
+
+## Delete messages
+
+Delete a message:
+
+```typescript
+await client.deleteMessage({
+  id: message.id,
+})
+```
+
+## Type signatures
+
+```typescript
+// Message
+type Message = {
+  id: string
+  conversationId: string
+  userId: string
+  type: string
+  payload: any
+  tags: Record<string, string>
+  createdAt: string
+  updatedAt: string
+}
+
+// Create message request
+type CreateMessageRequest = {
+  conversationId: string
+  userId: string
+  type: string
+  payload: any
+  tags: Record<string, string>
+}
+
+// Available message types
+type MessageType = 
+  | 'text'
+  | 'image' 
+  | 'audio'
+  | 'video'
+  | 'file'
+  | 'location'
+  | 'card'
+  | 'carousel'
+  | 'choice'
+  | 'dropdown'
+  | 'bloc'
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Conversations" icon="comments" href="/bots/conversations">
+    Manage conversations and users
+  </Card>
+  <Card title="Bot handlers" icon="code" href="/bots/bot-handlers">
+    Implement message handlers
+  </Card>
+</CardGroup>

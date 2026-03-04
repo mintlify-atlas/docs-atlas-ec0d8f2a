@@ -1,0 +1,307 @@
+---
+title: Installing the SDK
+description: Install and configure the Botpress SDK for TypeScript projects
+---
+
+## Prerequisites
+
+- Node.js 18.x or higher
+- npm, yarn, or pnpm package manager
+- TypeScript 5.0 or higher (recommended)
+
+## Installation
+
+Install both the SDK and client packages:
+
+```bash npm
+npm install @botpress/sdk @botpress/client
+```
+
+```bash yarn
+yarn add @botpress/sdk @botpress/client
+```
+
+```bash pnpm
+pnpm add @botpress/sdk @botpress/client
+```
+
+## Package Overview
+
+### @botpress/sdk
+
+The core SDK package provides:
+
+- **Bot SDK** - `BotDefinition`, `BotImplementation`
+- **Integration SDK** - `IntegrationDefinition`, `IntegrationImplementation`  
+- **Plugin SDK** - `PluginDefinition`, `PluginImplementation`
+- **Schema Validation** - Zod-based schema builder (`z`)
+- **Type Utilities** - Type-safe helpers and utilities
+
+### @botpress/client
+
+The client package provides:
+
+- **Client** - Main API client class
+- **Runtime API** - Conversation, message, user, and state operations
+- **Admin API** - Bot and integration management
+- **Error Types** - `RuntimeError`, `isApiError`
+
+## Importing the SDK
+
+### Full SDK Import
+
+```typescript
+import * as sdk from '@botpress/sdk'
+
+// Access all SDK features
+const bot = new sdk.BotDefinition({ /* ... */ })
+const schema = sdk.z.object({ /* ... */ })
+```
+
+### Named Imports
+
+```typescript
+import { 
+  BotDefinition, 
+  BotImplementation,
+  IntegrationDefinition,
+  z 
+} from '@botpress/sdk'
+
+const bot = new BotDefinition({ /* ... */ })
+const nameSchema = z.string().min(1)
+```
+
+### Client Import
+
+```typescript
+import { Client } from '@botpress/client'
+
+const client = new Client({
+  apiUrl: 'https://api.botpress.cloud',
+  token: process.env.BOTPRESS_TOKEN
+})
+```
+
+## TypeScript Configuration
+
+Ensure your `tsconfig.json` has appropriate settings:
+
+```json tsconfig.json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
+```
+
+## Project Structure
+
+### Bot Project
+
+```
+my-bot/
+├── src/
+│   ├── index.ts           # Bot entry point
+│   ├── bot.definition.ts  # Bot definition
+│   └── handlers/          # Event handlers
+│       ├── message-created.ts
+│       └── event-received.ts
+├── package.json
+└── tsconfig.json
+```
+
+**bot.definition.ts**
+
+```typescript
+import { BotDefinition, z } from '@botpress/sdk'
+import github from './integrations/github'
+
+export default new BotDefinition({
+  states: {
+    conversation: {
+      type: 'conversation',
+      schema: z.object({
+        topic: z.string().optional()
+      })
+    }
+  },
+  events: {
+    customEvent: {
+      schema: z.object({
+        data: z.string()
+      })
+    }
+  }
+}).addIntegration(github, {
+  configuration: { /* ... */ }
+})
+```
+
+**index.ts**
+
+```typescript
+import { Bot } from '@botpress/sdk'
+import definition from './bot.definition'
+
+export default new Bot({
+  definition,
+  actions: {},
+  on: (bot) => {
+    bot.message('*', async ({ message, client }) => {
+      console.log('Received:', message.payload)
+    })
+  }
+})
+```
+
+### Integration Project
+
+```
+my-integration/
+├── src/
+│   ├── index.ts                  # Integration implementation
+│   ├── integration.definition.ts # Integration definition
+│   └── actions/                  # Action handlers
+│       └── send-message.ts
+├── package.json
+└── tsconfig.json
+```
+
+**integration.definition.ts**
+
+```typescript
+import { IntegrationDefinition, z } from '@botpress/sdk'
+
+export default new IntegrationDefinition({
+  name: 'my-integration',
+  version: '1.0.0',
+  title: 'My Integration',
+  configuration: {
+    schema: z.object({
+      apiKey: z.string().title('API Key')
+    })
+  },
+  channels: {
+    channel: {
+      messages: {
+        text: {
+          schema: z.object({
+            text: z.string()
+          })
+        }
+      }
+    }
+  },
+  actions: {
+    sendMessage: {
+      input: {
+        schema: z.object({
+          text: z.string()
+        })
+      },
+      output: {
+        schema: z.object({
+          messageId: z.string()
+        })
+      }
+    }
+  }
+})
+```
+
+**index.ts**
+
+```typescript
+import { Integration } from '@botpress/sdk'
+import definition from './integration.definition'
+
+export default new Integration({
+  definition,
+  register: async ({ ctx, logger }) => {
+    logger.forBot().info('Integration registered')
+  },
+  unregister: async () => {},
+  handler: async ({ req }) => {
+    // Handle webhooks
+  },
+  actions: {
+    sendMessage: async ({ input }) => {
+      return { messageId: 'msg-123' }
+    }
+  },
+  channels: {}
+})
+```
+
+## Environment Variables
+
+Store sensitive configuration in environment variables:
+
+```bash .env
+BOTPRESS_TOKEN=bp_your_token_here
+BOTPRESS_API_URL=https://api.botpress.cloud
+BOTPRESS_WORKSPACE_ID=your_workspace_id
+```
+
+Load them in your application:
+
+```typescript
+import { config } from 'dotenv'
+config()
+
+const client = new Client({
+  apiUrl: process.env.BOTPRESS_API_URL!,
+  token: process.env.BOTPRESS_TOKEN!,
+  workspaceId: process.env.BOTPRESS_WORKSPACE_ID
+})
+```
+
+## Verification
+
+Verify your installation:
+
+```typescript verify.ts
+import * as sdk from '@botpress/sdk'
+import { Client } from '@botpress/client'
+
+console.log('SDK Version:', sdk.version)
+console.log('Available exports:', Object.keys(sdk))
+
+// Test schema validation
+const testSchema = sdk.z.object({
+  name: sdk.z.string()
+})
+
+const result = testSchema.safeParse({ name: 'Test' })
+console.log('Schema validation:', result.success)
+```
+
+Run the verification:
+
+```bash
+npx tsx verify.ts
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Bot SDK" icon="robot" href="/sdk/bot/definition">
+    Start building your first bot
+  </Card>
+  <Card title="Integration SDK" icon="plug" href="/sdk/integration/definition">
+    Create a platform integration
+  </Card>
+</CardGroup>

@@ -1,0 +1,428 @@
+---
+title: Productivity & Project Management
+description: Connect your Botpress bot to productivity tools and project management platforms
+---
+
+Integrate your chatbot with popular productivity and project management tools to automate workflows, manage tasks, and improve team collaboration.
+
+## Available Productivity Integrations
+
+<CardGroup cols={2}>
+  <Card title="Asana" icon="tasks">
+    Connect to Asana to create tasks, update projects, and manage work
+  </Card>
+  
+  <Card title="ClickUp" icon="check-square">
+    Create and update tasks, add comments, and manage projects
+  </Card>
+  
+  <Card title="Linear" icon="linear">
+    Issue tracking and project management for software teams
+  </Card>
+  
+  <Card title="Notion" icon="note">
+    Manage pages, databases, and collaborate in connected workspaces
+  </Card>
+  
+  <Card title="Trello" icon="trello">
+    Update cards, create tasks, and manage boards
+  </Card>
+  
+  <Card title="Monday" icon="calendar-days">
+    Manage items, boards, and workflows on Monday.com
+  </Card>
+  
+  <Card title="Todoist" icon="list-check">
+    Create and modify tasks, manage to-do lists
+  </Card>
+  
+  <Card title="Google Sheets" icon="table">
+    Access, update, and append data to spreadsheets
+  </Card>
+</CardGroup>
+
+## Asana
+
+**Installation:**
+```bash
+bp add asana
+```
+
+**Description:**
+Connect your bot to your Asana inbox, create and update tasks, add comments, and locate users.
+
+**Key Features:**
+- **Task Management:** Create, update, and track tasks
+- **Project Organization:** Manage projects and workspaces
+- **Comments:** Add comments to tasks and projects
+- **User Lookup:** Find and assign team members
+- **Inbox Integration:** Connect to your Asana inbox
+
+**Channels:**
+- Asana conversation channel for task discussions
+
+**Actions:**
+- Create tasks
+- Update task details
+- Add comments
+- Find users
+- Get project information
+
+**Use Cases:**
+- Automated task creation from chat
+- Status updates via chatbot
+- Team collaboration workflows
+- Project tracking automation
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/asana)
+
+---
+
+## ClickUp
+
+**Installation:**
+```bash
+bp add clickup
+```
+
+**Description:**
+Create and update tasks, and add comments from your chatbot.
+
+**Key Features:**
+- **Task CRUD:** Create, read, update, and delete tasks
+- **Comments:** Add comments to tasks
+- **Assignees:** Manage task assignments
+- **Status Tracking:** Update task status
+- **Due Dates:** Set and manage deadlines
+- **Tags:** Organize tasks with tags
+
+**Channels:**
+- Comment channel for task discussions
+
+**Events:**
+- Task Created
+- Task Updated
+- Task Deleted
+
+**Actions:**
+- Create Task
+- Update Task
+- Delete Task
+- Get List Members
+
+**Configuration:**
+Requires ClickUp API Key and Team ID.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/clickup)
+
+---
+
+## Linear
+
+**Installation:**
+```bash
+bp add linear
+```
+
+**Description:**
+Issue tracking and project management designed for software development teams.
+
+**Key Features:**
+- **Issue Management:** Create and track issues
+- **Project Tracking:** Monitor project progress
+- **Team Collaboration:** Assign and discuss issues
+- **Workflow Automation:** Streamline development processes
+
+**Use Cases:**
+- Bug report automation
+- Feature request tracking
+- Sprint planning assistance
+- Development workflow integration
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/linear)
+
+---
+
+## Notion
+
+**Installation:**
+```bash
+bp add notion
+```
+
+**Description:**
+Add pages and comments, manage databases, and engage in discussions — all within your chatbot.
+
+**Key Features:**
+- **Pages:** Create and update Notion pages
+- **Databases:** Query and manage database entries
+- **Comments:** Add comments to pages
+- **File Access:** Read-only access to files
+- **Discussions:** Engage in page discussions
+
+**Actions:**
+- Create and update pages
+- Query databases
+- Add comments
+- List items in folders (file management)
+- Transfer files to Botpress
+
+**Use Cases:**
+- Knowledge base updates
+- Documentation automation
+- Meeting notes creation
+- Database entry from chat
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/notion)
+
+---
+
+## Trello
+
+**Installation:**
+```bash
+bp add trello
+```
+
+**Description:**
+Update cards, add comments, create new cards, and read board members from your chatbot.
+
+**Key Features:**
+- **Card Management:** Create, update, and move cards
+- **Comments:** Add comments to cards
+- **Board Access:** Read board structure and members
+- **List Management:** Organize cards across lists
+- **Labels and Tags:** Categorize cards
+
+**Use Cases:**
+- Project tracking
+- Kanban board automation
+- Task assignment from chat
+- Team collaboration
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/trello)
+
+---
+
+## Monday
+
+**Installation:**
+```bash
+bp add monday
+```
+
+**Description:**
+Manage items in Monday boards.
+
+**Key Features:**
+- **Board Management:** Access and update boards
+- **Item CRUD:** Create, read, update, and delete items
+- **Workflow Automation:** Automate Monday.com workflows
+- **Team Collaboration:** Coordinate work across teams
+
+**Use Cases:**
+- Work OS automation
+- Project status updates
+- Resource management
+- Team coordination
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/monday)
+
+---
+
+## Todoist
+
+**Installation:**
+```bash
+bp add todoist
+```
+
+**Description:**
+Create and modify tasks, post comments and more.
+
+**Key Features:**
+- **Task Management:** Create, update, and complete tasks
+- **Comments:** Add comments to tasks
+- **Projects:** Organize tasks into projects
+- **Due Dates:** Schedule tasks with deadlines
+- **Priorities:** Set task priorities
+
+**Use Cases:**
+- Personal task management
+- Team to-do lists
+- Reminder automation
+- Daily planning assistance
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/todoist)
+
+---
+
+## Google Sheets
+
+**Installation:**
+```bash
+bp add gsheets
+```
+
+**Description:**
+Access, update, and append Google Sheets data.
+
+**Key Features:**
+- **Read Data:** Query spreadsheet data
+- **Write Data:** Update cell values
+- **Append Rows:** Add new data rows
+- **Range Operations:** Work with specific cell ranges
+- **Formula Support:** Use Google Sheets formulas
+
+**Use Cases:**
+- Data collection from chat
+- Report generation
+- Inventory tracking
+- Form submissions to sheets
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/gsheets)
+
+---
+
+## Airtable
+
+**Installation:**
+```bash
+bp add airtable
+```
+
+**Description:**
+Access and manage Airtable data to allow your chatbot to retrieve details, update records, and organize information.
+
+**Key Features:**
+- **Record Management:** Create, read, update records
+- **Table Operations:** Create and update tables
+- **List Records:** Query and filter records
+- **Database-Spreadsheet Hybrid:** Combine database power with spreadsheet ease
+
+**Actions:**
+- Get Table Records
+- Create Table
+- Update Table
+- Create Record
+- Update Record
+- List Records
+
+**Configuration:**
+Requires Airtable Personal Access Token and Base ID.
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/airtable)
+
+---
+
+## Additional Productivity Tools
+
+### Canny
+**Installation:** `bp add canny`
+
+Connect your Botpress bot to Canny for feature request management and customer feedback collection.
+
+### Feature Base
+**Installation:** `bp add feature-base`
+
+Integration with Feature Base for managing product feedback and roadmaps.
+
+---
+
+## Calendly
+
+**Installation:**
+```bash
+bp add calendly
+```
+
+**Description:**
+Schedule meetings and manage events using the Calendly scheduling platform.
+
+**Key Features:**
+- **Meeting Scheduling:** Book appointments automatically
+- **Availability Management:** Check and display available slots
+- **Event Management:** Create and manage meeting types
+- **Integration with Calendars:** Sync with calendar providers
+
+**Use Cases:**
+- Automated appointment booking
+- Sales meeting scheduling
+- Support call scheduling
+- Interview coordination
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/calendly)
+
+---
+
+## Cal.com
+
+**Installation:**
+```bash
+bp add calcom
+```
+
+**Description:**
+Schedule meetings and manage events using the Cal.com scheduling platform.
+
+**Key Features:**
+- **Open-Source Scheduling:** Self-hosted scheduling option
+- **Meeting Booking:** Automated appointment scheduling
+- **Calendar Integration:** Connect to multiple calendars
+- **Customizable:** Tailor scheduling workflows
+
+**Use Cases:**
+- Appointment booking
+- Team scheduling
+- Event management
+- Meeting coordination
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/calcom)
+
+---
+
+## Google Calendar
+
+**Installation:**
+```bash
+bp add googlecalendar
+```
+
+**Description:**
+Sync with your calendar to manage events, appointments, and schedules directly within the chatbot.
+
+**Key Features:**
+- **Event Creation:** Create calendar events from chat
+- **Event Updates:** Modify existing events
+- **Availability Checking:** View free/busy status
+- **Reminders:** Set up event reminders
+
+**Use Cases:**
+- Meeting scheduling
+- Appointment reminders
+- Event management
+- Calendar automation
+
+**Source:**
+[GitHub](https://github.com/botpress/botpress/tree/master/integrations/googlecalendar)
+
+---
+
+## Best Practices
+
+1. **Choose the right tool** for your workflow
+2. **Automate repetitive tasks** through chat interactions
+3. **Integrate multiple tools** for comprehensive workflows
+4. **Use webhooks** to trigger bot actions on external events
+5. **Maintain data consistency** across platforms
